@@ -2,7 +2,7 @@
 
 ## Official API surfaces
 
-Checked on 2026-06-11:
+Checked on 2026-06-11. Local `lark-cli` compatibility updated on 2026-06-12 for embedded `lark-doc` skill v2.0.0.
 
 - Create document: `https://open.feishu.cn/document/server-docs/docs/docs/docx-v1/document/create`
 - Create blocks: `https://open.feishu.cn/document/server-docs/docs/docs/docx-v1/document-block/create`
@@ -17,8 +17,18 @@ Create:
 ```bash
 lark-cli docs +create \
   --api-version v2 \
-  --title "Title" \
-  --markdown @body.md
+  --doc-format markdown \
+  --content @body.md
+```
+
+Create in a folder or wiki node:
+
+```bash
+lark-cli docs +create \
+  --api-version v2 \
+  --parent-token "<folder_or_wiki_node_token>" \
+  --doc-format markdown \
+  --content @body.md
 ```
 
 Overwrite:
@@ -27,32 +37,48 @@ Overwrite:
 lark-cli docs +update \
   --doc "<doc-url-or-id>" \
   --api-version v2 \
-  --mode overwrite \
-  --markdown @body.md \
-  --new-title "Title"
+  --command overwrite \
+  --doc-format markdown \
+  --content @body.md
 ```
 
-Insert image before a placeholder:
+Fetch placeholder block ids:
+
+```bash
+lark-cli docs +fetch \
+  --doc "<doc-url-or-id>" \
+  --api-version v2 \
+  --doc-format xml \
+  --detail with-ids \
+  --format json
+```
+
+Append image, then move it after a placeholder block:
 
 ```bash
 lark-cli docs +media-insert \
   --doc "<doc-url-or-id>" \
-  --file image_001.png \
+  --file images/image_001.png \
   --type image \
   --width 800 \
-  --before \
-  --selection-with-ellipsis "FEISHU_MD_IMAGE_001_xxxxxxxx"
+  --align center
+
+lark-cli docs +update \
+  --doc "<doc-url-or-id>" \
+  --api-version v2 \
+  --command block_move_after \
+  --block-id "<placeholder_block_id>" \
+  --src-block-ids "<image_block_id>"
 ```
 
-Delete placeholder:
+Delete placeholder block:
 
 ```bash
 lark-cli docs +update \
   --doc "<doc-url-or-id>" \
   --api-version v2 \
-  --mode delete_range \
-  --selection-with-ellipsis "FEISHU_MD_IMAGE_001_xxxxxxxx" \
-  --markdown ""
+  --command block_delete \
+  --block-id "<placeholder_block_id>"
 ```
 
 Fetch for verification:
@@ -61,16 +87,21 @@ Fetch for verification:
 lark-cli docs +fetch \
   --doc "<doc-url-or-id>" \
   --api-version v2 \
-  --format pretty
+  --doc-format xml \
+  --detail with-ids \
+  --format json
 ```
 
 ## Known gotchas
 
-- `lark-cli` `@file` arguments are most reliable when the command runs with `cwd` set to the directory containing the file and the argument is relative, for example `@body.md`.
-- `docs +update --mode overwrite` deletes existing image blocks. Reinsert every image after every overwrite.
+- Use `lark-cli skills read lark-doc` and the referenced files when CLI behavior changes; the embedded skill is version-matched with the installed CLI.
+- `lark-cli` `@file` arguments must be relative to the command cwd, for example `@body.md`. Absolute `@/tmp/file.md` can fail as `unsafe file path`.
+- `docs +media-insert --file` also expects a relative path under cwd. Copy/download images into the run directory and pass `images/image_001.png`, not an absolute path.
+- `docs +update --command overwrite` deletes existing image blocks. Reinsert every image after every overwrite.
 - `docs +media-insert` reports success with a JSON response containing a `block_id`. Treat missing `block_id` as suspicious even if the process exits zero.
-- `selection-with-ellipsis` can match the wrong location if the text is not unique. Generated placeholders avoid this.
-- If placeholder deletion fails, the document can still contain uploaded images; report the leftover placeholders and rerun cleanup after checking fetch output.
+- The stable image placement workflow is: placeholder text -> fetch placeholder block ids -> append media -> `block_move_after` -> `block_delete`.
+- `selection-with-ellipsis` is still available, but block-id movement is more reliable for batch image placement.
+- Permission failures must be separated: missing scope, `unsafe file path`, and `forBidden` usually have different fixes.
 - For WeChat article images, prefer extracting real `data-src` URLs from the page HTML instead of trusting transformed Markdown image URLs. This skill is general Markdown, so it does not implement WeChat-specific scraping.
 - Avoid `grep -P` in macOS shell validation. Use Python, `sed`, or POSIX-compatible grep.
 

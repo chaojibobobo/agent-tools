@@ -7,7 +7,7 @@ metadata:
 
 # Markdown 带图上传飞书云文档
 
-把本地 Markdown 报告发布到飞书/Lark Docx 文档，并尽量保留图片位置。默认使用本机已验证的 `lark-cli docs` 能力：先写入去图版 Markdown，再逐张把图片插入到占位符位置，最后清理占位符并回读校验。
+把本地 Markdown 报告发布到飞书/Lark Docx 文档，并尽量保留图片位置。默认使用新版 `lark-cli docs` v2：先写入去图版 Markdown，再追加上传图片，回读 block id 后把图片移动到占位符后方，最后删除占位符并回读校验。
 
 ## 触发场景
 
@@ -20,22 +20,22 @@ metadata:
 首选脚本：
 
 ```bash
-python3 md-to-feishu-doc/scripts/md_to_feishu_doc.py <markdown-file>
+python3 skills/md-to-feishu-doc/scripts/md_to_feishu_doc.py <markdown-file>
 ```
 
 常用参数：
 
 ```bash
-python3 md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
+python3 skills/md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
   --title "飞书文档标题" \
-  --folder-token "<folder_token>" \
+  --parent-token "<folder_or_wiki_node_token>" \
   --api-version v2
 ```
 
 覆盖已有文档：
 
 ```bash
-python3 md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
+python3 skills/md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
   --doc "https://example.feishu.cn/docx/xxxxxxxxxxxx" \
   --title "新标题" \
   --api-version v2
@@ -44,7 +44,7 @@ python3 md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
 先做本地预检，不调用飞书：
 
 ```bash
-python3 md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md --dry-run --no-download
+python3 skills/md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md --dry-run --no-download
 ```
 
 ## 工作流
@@ -54,16 +54,20 @@ python3 md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md --dry-run --no-do
 3. 把每个图片引用替换成唯一占位符行，生成临时 `body.md`。
 4. 下载或复制图片到临时工作目录，生成 `manifest.json`。
 5. 新建文档或覆盖已有文档：
-   - 新建：`lark-cli docs +create --markdown @body.md --api-version v2`
-   - 覆盖：`lark-cli docs +update --mode overwrite --markdown @body.md --api-version v2`
-6. 对每张图片执行 `docs +media-insert --before --selection-with-ellipsis <placeholder>`。
-7. 用 `docs +update --mode delete_range` 尝试删除占位符。
-8. 用 `docs +fetch` 回读，报告剩余占位符、成功图片数、失败图片数和文档 URL。
+   - 新建：`lark-cli docs +create --api-version v2 --doc-format markdown --content @body.md`
+   - 覆盖：`lark-cli docs +update --api-version v2 --command overwrite --doc-format markdown --content @body.md`
+6. `docs +fetch --detail with-ids` 回读占位符 block id。
+7. 对每张图片执行 `docs +media-insert --file images/...`，图片路径必须是当前工作目录下的相对路径。
+8. 用 `docs +update --command block_move_after` 把图片 block 移到占位符后。
+9. 用 `docs +update --command block_delete` 删除占位符 block。
+10. 用 `docs +fetch` 回读，报告剩余占位符、成功图片数、移动图片数、失败图片数和文档 URL。
 
 ## 重要判断
 
-- `docs +update --markdown` 不应被假设为能上传外链图。图片必须单独下载并插入。
-- `--mode overwrite` 会清掉原文档里的所有 block，包括之前插入的图片。覆盖后必须重新插入全部图片。
+- 新版 `lark-cli` 使用 `--content` / `--command` / `--doc-format markdown`，不要再用旧的 `--markdown` / `--mode`。
+- `docs +update --content` 不应被假设为能上传本地图片。图片必须单独下载或复制后插入。
+- `--command overwrite` 会清掉原文档里的所有 block，包括之前插入的图片。覆盖后必须重新插入全部图片。
+- `docs +media-insert --file` 只传工作目录下的相对路径；绝对路径会触发 `unsafe file path`。
 - 占位符清理是 best effort。如果清理失败，不要谎报完成；把剩余占位符数量告诉用户。
 - 如果图片非常多，保留默认节流；遇到限流时加大 `--rate-limit-seconds` 或重跑失败项。
 - 如果文档已经在团队里共享，覆盖已有文档前先确认用户确实要覆盖。

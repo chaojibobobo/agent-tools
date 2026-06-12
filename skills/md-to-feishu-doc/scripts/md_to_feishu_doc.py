@@ -2,8 +2,8 @@
 """Upload Markdown with images to a Feishu/Lark cloud document via lark-cli.
 
 The script replaces image markdown with unique placeholder lines, writes the
-placeholder markdown to a document, inserts local media before each placeholder,
-then tries to delete placeholders.
+placeholder markdown to a document, appends local media, moves each media block
+after its placeholder block, then deletes placeholders.
 """
 
 from __future__ import annotations
@@ -50,7 +50,10 @@ class ImageRef:
     status: str = "pending"
     error: str | None = None
     uploaded: bool = False
+    moved: bool = False
     cleaned: bool = False
+    placeholder_block_id: str | None = None
+    media_block_id: str | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,10 +63,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("markdown_file", help="Path to the Markdown file.")
     parser.add_argument("--title", help="Document title. Defaults to first H1 or file stem.")
     parser.add_argument("--doc", help="Existing doc URL or document id to overwrite.")
-    parser.add_argument("--folder-token", help="Parent folder token for new documents.")
-    parser.add_argument("--wiki-space", help="Wiki space id for new documents.")
-    parser.add_argument("--wiki-node", help="Wiki node token for new documents.")
-    parser.add_argument("--as", dest="identity", choices=("user", "bot"), help="lark-cli identity.")
+    parser.add_argument(
+        "--parent-token",
+        dest="parent_token",
+        help="Parent folder token or wiki node token for new documents.",
+    )
+    parser.add_argument(
+        "--folder-token",
+        dest="parent_token",
+        help="Deprecated alias for --parent-token.",
+    )
+    parser.add_argument(
+        "--wiki-node",
+        dest="parent_token",
+        help="Deprecated alias for --parent-token.",
+    )
+    parser.add_argument("--parent-position", help="Parent position, for example my_library.")
+    parser.add_argument("--wiki-space", help="Deprecated; use --parent-token or --parent-position.")
+    parser.add_argument(
+        "--as",
+        dest="identity",
+        choices=("user", "bot"),
+        default="user",
+        help="lark-cli identity. Defaults to user for document ownership.",
+    )
     parser.add_argument("--api-version", default="v2", choices=("v1", "v2"))
     parser.add_argument("--doc-domain", default="gcnpesuzmfqe.feishu.cn")
     parser.add_argument("--image-width", type=int, default=800)
@@ -97,6 +120,21 @@ def default_title(md_path: Path, text: str) -> str:
         if match:
             return match.group(1).strip()
     return md_path.stem.replace("-", " ").replace("_", " ").strip() or "Markdown Report"
+
+
+def apply_explicit_title(body: str, title: str | None) -> str:
+    """Make --title affect the Markdown title used by lark-cli +create."""
+    if not title:
+        return body
+    lines = body.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if re.match(r"^#\s+.+", line):
+            line_end = "\n" if line.endswith("\n") else ""
+            lines[i] = f"# {title}{line_end}"
+            return "".join(lines)
+        if line.strip():
+            break
+    return f"# {title}\n\n{body}"
 
 
 def parse_markdown_destination(raw: str) -> str:
@@ -282,6 +320,42 @@ def contains_block_id(stdout: str) -> bool:
     return False
 
 
+def extract_first_block_id(stdout: str) -> str | None:
+    try:
+        data = json.loads(stdout)
+        for item in walk_json(data):
+            if isinstance(item, dict):
+                value = item.get("block_id")
+                if isinstance(value, str) and value:
+                    return value
+    except json.JSONDecodeError:
+        pass
+    match = re.search(r'"block_id"\s*:\s*"([^"]+)"', stdout)
+    return match.group(1) if match else None
+
+
+def extract_fetch_content(stdout: str) -> str | None:
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    for item in walk_json(data):
+        if isinstance(item, dict):
+            value = item.get("content")
+            if isinstance(value, str):
+                return value
+    return None
+
+
+def find_block_id_for_text(content: str, text: str) -> str | None:
+    pos = content.find(text)
+    if pos < 0:
+        return None
+    prefix = content[max(0, pos - 1500) : pos]
+    matches = list(re.finditer(r'\bid="([^"]+)"', prefix))
+    return matches[-1].group(1) if matches else None
+
+
 def identity_args(args: argparse.Namespace) -> list[str]:
     return ["--as", args.identity] if args.identity else []
 
@@ -301,13 +375,13 @@ def create_or_update_doc(
             args.doc,
             "--api-version",
             args.api_version,
-            "--mode",
+            "--command",
             "overwrite",
-            "--markdown",
+            "--doc-format",
+            "markdown",
+            "--content",
             "@body.md",
         ]
-        if args.title:
-            cmd.extend(["--new-title", title])
         cmd.extend(identity_args(args))
         result = run_cmd(cmd, workdir, args.dry_run)
         must_succeed(result, "update document")
@@ -320,23 +394,21 @@ def create_or_update_doc(
         "+create",
         "--api-version",
         args.api_version,
-        "--title",
-        title,
-        "--markdown",
+        "--doc-format",
+        "markdown",
+        "--content",
         "@body.md",
     ]
-    if args.folder_token:
-        cmd.extend(["--folder-token", args.folder_token])
-    if args.wiki_space:
-        cmd.extend(["--wiki-space", args.wiki_space])
-    if args.wiki_node:
-        cmd.extend(["--wiki-node", args.wiki_node])
+    if args.parent_token:
+        cmd.extend(["--parent-token", args.parent_token])
+    if args.parent_position:
+        cmd.extend(["--parent-position", args.parent_position])
     cmd.extend(identity_args(args))
 
     result = run_cmd(cmd, workdir, args.dry_run)
     must_succeed(result, "create document")
     doc_id, doc_url = extract_doc_ref(result.stdout, args.doc_domain)
-    doc_ref = doc_url or doc_id
+    doc_ref = doc_id or doc_url
     if not doc_ref and not args.dry_run:
         raise RuntimeError(f"Could not parse document id/url from lark-cli output:\n{result.stdout}")
     return doc_ref or "DRY_RUN_DOC", doc_url
@@ -351,6 +423,11 @@ def upload_one_image(
 ) -> None:
     if not ref.local_path:
         return
+    media_path = Path(ref.local_path).resolve()
+    try:
+        cli_file = str(media_path.relative_to(workdir.resolve()))
+    except ValueError:
+        cli_file = str(media_path)
     cmd = [
         lark_cli,
         "docs",
@@ -358,14 +435,13 @@ def upload_one_image(
         "--doc",
         doc_ref,
         "--file",
-        ref.local_path,
+        cli_file,
         "--type",
         "image",
         "--width",
         str(args.image_width),
-        "--before",
-        "--selection-with-ellipsis",
-        ref.placeholder,
+        "--align",
+        "center",
     ]
     if args.caption_from_alt and ref.alt:
         cmd.extend(["--caption", ref.alt[:120]])
@@ -375,13 +451,101 @@ def upload_one_image(
     for attempt in range(1, args.retries + 1):
         result = run_cmd(cmd, workdir, args.dry_run)
         last_output = (result.stdout or "") + (result.stderr or "")
-        if result.returncode == 0 and (args.dry_run or contains_block_id(result.stdout)):
+        media_block_id = extract_first_block_id(result.stdout)
+        if result.returncode == 0 and (args.dry_run or media_block_id):
             ref.uploaded = True
+            ref.media_block_id = media_block_id
             ref.status = "uploaded"
             return
         time.sleep(args.rate_limit_seconds * attempt)
     ref.status = "failed"
     ref.error = f"media insert failed after {args.retries} tries: {last_output[-600:]}"
+
+
+def fetch_placeholder_block_ids(
+    args: argparse.Namespace,
+    lark_cli: str,
+    workdir: Path,
+    doc_ref: str,
+    refs: list[ImageRef],
+) -> None:
+    if not refs:
+        return
+    cmd = [
+        lark_cli,
+        "docs",
+        "+fetch",
+        "--doc",
+        doc_ref,
+        "--api-version",
+        args.api_version,
+        "--doc-format",
+        "xml",
+        "--detail",
+        "with-ids",
+        "--format",
+        "json",
+    ]
+    cmd.extend(identity_args(args))
+
+    content = ""
+    for attempt in range(1, args.retries + 1):
+        result = run_cmd(cmd, workdir, args.dry_run)
+        must_succeed(result, "fetch placeholder block ids")
+        content = extract_fetch_content(result.stdout) or ""
+        (workdir / "fetch-with-ids.xml").write_text(content, encoding="utf-8")
+        for ref in refs:
+            ref.placeholder_block_id = find_block_id_for_text(content, ref.placeholder)
+        if all(ref.placeholder_block_id for ref in refs):
+            return
+        time.sleep(args.rate_limit_seconds * attempt)
+
+    for ref in refs:
+        if not ref.placeholder_block_id:
+            ref.status = "failed"
+            ref.error = f"placeholder block id not found for {ref.placeholder}"
+
+
+def move_uploaded_image(
+    args: argparse.Namespace,
+    lark_cli: str,
+    workdir: Path,
+    doc_ref: str,
+    ref: ImageRef,
+) -> None:
+    if not ref.uploaded:
+        return
+    if not ref.placeholder_block_id or not ref.media_block_id:
+        ref.status = "failed"
+        missing = []
+        if not ref.placeholder_block_id:
+            missing.append("placeholder_block_id")
+        if not ref.media_block_id:
+            missing.append("media_block_id")
+        ref.error = f"cannot move image, missing {', '.join(missing)}"
+        return
+    cmd = [
+        lark_cli,
+        "docs",
+        "+update",
+        "--doc",
+        doc_ref,
+        "--api-version",
+        args.api_version,
+        "--command",
+        "block_move_after",
+        "--block-id",
+        ref.placeholder_block_id,
+        "--src-block-ids",
+        ref.media_block_id,
+    ]
+    cmd.extend(identity_args(args))
+    result = run_cmd(cmd, workdir, args.dry_run)
+    if result.returncode == 0:
+        ref.moved = True
+        return
+    ref.status = "failed"
+    ref.error = f"move image failed: {result.stderr or result.stdout}"
 
 
 def cleanup_placeholder(
@@ -401,12 +565,10 @@ def cleanup_placeholder(
         doc_ref,
         "--api-version",
         args.api_version,
-        "--mode",
-        "delete_range",
-        "--selection-with-ellipsis",
-        ref.placeholder,
-        "--markdown",
-        "",
+        "--command",
+        "block_delete",
+        "--block-id",
+        ref.placeholder_block_id or "",
     ]
     cmd.extend(identity_args(args))
     result = run_cmd(cmd, workdir, args.dry_run)
@@ -435,15 +597,21 @@ def fetch_verify(
         doc_ref,
         "--api-version",
         args.api_version,
+        "--doc-format",
+        "xml",
+        "--detail",
+        "with-ids",
         "--format",
-        "pretty",
+        "json",
     ]
     cmd.extend(identity_args(args))
     result = run_cmd(cmd, workdir)
-    (workdir / "fetch-output.txt").write_text(result.stdout + result.stderr, encoding="utf-8")
     if result.returncode != 0:
+        (workdir / "fetch-output.txt").write_text(result.stdout + result.stderr, encoding="utf-8")
         return None
-    return sum(1 for ref in refs if ref.placeholder in result.stdout)
+    content = extract_fetch_content(result.stdout) or result.stdout
+    (workdir / "fetch-output.xml").write_text(content, encoding="utf-8")
+    return sum(1 for ref in refs if ref.placeholder in content)
 
 
 def write_manifest(workdir: Path, args: argparse.Namespace, title: str, refs: list[ImageRef]) -> None:
@@ -469,6 +637,7 @@ def main() -> int:
     text = md_path.read_text(encoding="utf-8")
     title = args.title or default_title(md_path, text)
     body, refs = replace_images(text)
+    body = apply_explicit_title(body, args.title)
 
     if args.workdir:
         workdir = Path(args.workdir).expanduser().resolve()
@@ -502,12 +671,16 @@ def main() -> int:
 
     lark_cli = find_lark_cli(args.lark_cli)
     doc_ref, doc_url = create_or_update_doc(args, lark_cli, workdir, title)
+    fetch_placeholder_block_ids(args, lark_cli, workdir, doc_ref, refs)
+    write_manifest(workdir, args, title, refs)
 
     for ref in refs:
         if ref.status != "ready":
             continue
         upload_one_image(args, lark_cli, workdir, doc_ref, ref)
-        cleanup_placeholder(args, lark_cli, workdir, doc_ref, ref)
+        move_uploaded_image(args, lark_cli, workdir, doc_ref, ref)
+        if ref.moved:
+            cleanup_placeholder(args, lark_cli, workdir, doc_ref, ref)
         time.sleep(args.rate_limit_seconds)
         write_manifest(workdir, args, title, refs)
 
@@ -521,8 +694,11 @@ def main() -> int:
         "workdir": str(workdir),
         "images_total": len(refs),
         "images_uploaded": sum(1 for ref in refs if ref.uploaded),
+        "images_moved": sum(1 for ref in refs if ref.moved),
         "images_failed": sum(1 for ref in refs if ref.status == "failed"),
-        "cleanup_failed": sum(1 for ref in refs if ref.uploaded and not ref.cleaned),
+        "cleanup_failed": sum(
+            1 for ref in refs if ref.uploaded and not ref.cleaned and not args.keep_placeholders
+        ),
         "placeholders_remaining": placeholders_remaining,
         "manifest": str(workdir / "manifest.json"),
     }
