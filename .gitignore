@@ -9,10 +9,10 @@ __pycache__/
 *.token
 
 _better-me-handoffs/
+.feishu-md-sync/
 tmp/
 temp/
 .tmp/
 *.log
 manifest.json
 fetch-output.txt
-

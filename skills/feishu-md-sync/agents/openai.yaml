@@ -1,0 +1,7 @@
+interface:
+  display_name: "Feishu MD Sync"
+  short_description: "Safely sync Markdown with Feishu Docs."
+  default_prompt: "Use $feishu-md-sync to bind this Markdown file to a Feishu document and keep edits safely synchronized."
+
+policy:
+  allow_implicit_invocation: true

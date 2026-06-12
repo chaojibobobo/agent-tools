@@ -49,6 +49,31 @@ python3 skills/md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
   --parent-token "<folder_or_wiki_node_token>"
 ```
 
+### feishu-md-sync
+
+安全同步本地 Markdown 和飞书/Lark 云文档，带冲突检测。
+
+源码位置：
+
+```text
+skills/feishu-md-sync/
+```
+
+安装到 Codex：
+
+```bash
+scripts/install-skill.sh feishu-md-sync
+```
+
+绑定、检查、同步：
+
+```bash
+python3 skills/feishu-md-sync/scripts/feishu_md_sync.py bind notes.md "<feishu_doc_url>"
+python3 skills/feishu-md-sync/scripts/feishu_md_sync.py status notes.md
+python3 skills/feishu-md-sync/scripts/feishu_md_sync.py pull notes.md
+python3 skills/feishu-md-sync/scripts/feishu_md_sync.py push notes.md
+```
+
 ## Privacy
 
 这个仓库默认只提交 system/tool layer：可复用 skill、脚本、公开说明和无敏感信息的技术参考。
@@ -58,3 +83,4 @@ python3 skills/md-to-feishu-doc/scripts/md_to_feishu_doc.py report.md \
 - secrets、tokens、cookies、private keys、credentials
 - 本地交互日志、handoff、日报、复盘、个人/公司强上下文材料
 - `.env`、临时产物、下载缓存、上传 manifest
+- `.feishu-md-sync/` 冲突快照
