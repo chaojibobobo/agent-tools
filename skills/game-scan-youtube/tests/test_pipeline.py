@@ -182,9 +182,105 @@ class DecisionCardRenderingTests(unittest.TestCase):
             if element.get("tag") == "action"
         ]
         self.assertEqual(
-            "看视频",
+            "YouTube 原视频",
             actions[0]["actions"][0]["text"]["content"],
         )
+
+    def test_interactive_card_links_every_confirmed_new_game_to_youtube(self):
+        """Catches supplemental discoveries losing their first-hand video source."""
+        parsed = decision_fixture()
+        parsed["games"][1]["videos"] = [
+            {
+                "title": "Implicit source",
+                "url": "https://www.youtube.com/watch?v=implicit-source",
+                "meta": "Channel I · 12:00",
+            }
+        ]
+        parsed["games"][2]["videos"] = [
+            {
+                "title": "Track source",
+                "url": "https://www.youtube.com/watch?v=track-source",
+                "meta": "Channel T · 11:00",
+            }
+        ]
+
+        card = self.card.build_interactive_card(
+            date(2026, 7, 27),
+            parsed,
+            {
+                "period": "",
+                "total_games": 0,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+        payload = json.dumps(card, ensure_ascii=False)
+
+        self.assertIn("YouTube 原视频", payload)
+        self.assertIn("https://www.youtube.com/watch?v=focus1", payload)
+        self.assertIn("https://www.youtube.com/watch?v=implicit-source", payload)
+        self.assertIn("https://www.youtube.com/watch?v=track-source", payload)
+
+    def test_compact_post_links_every_confirmed_new_game_to_youtube(self):
+        """Catches the post fallback dropping sources present in the card."""
+        parsed = decision_fixture()
+        parsed["games"][1]["videos"] = [
+            {
+                "title": "Implicit source",
+                "url": "https://www.youtube.com/watch?v=implicit-source",
+                "meta": "Channel I · 12:00",
+            }
+        ]
+        parsed["games"][2]["videos"] = [
+            {
+                "title": "Track source",
+                "url": "https://www.youtube.com/watch?v=track-source",
+                "meta": "Channel T · 11:00",
+            }
+        ]
+
+        post = self.card.build_compact_post(
+            date(2026, 7, 27),
+            parsed,
+            {
+                "period": "",
+                "total_games": 0,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+        source_links = [
+            item["href"]
+            for group in post["zh_cn"]["content"]
+            for item in group
+            if item.get("tag") == "a" and item.get("text") == "YouTube 原视频"
+        ]
+
+        self.assertEqual(
+            [
+                "https://www.youtube.com/watch?v=focus1",
+                "https://www.youtube.com/watch?v=implicit-source",
+                "https://www.youtube.com/watch?v=track-source",
+            ],
+            source_links,
+        )
+
+    def test_rendering_rejects_confirmed_new_game_without_youtube_source(self):
+        """Catches source-less discoveries being silently published as confirmed."""
+        parsed = decision_fixture()
+        parsed["games"][2]["videos"] = []
+
+        with self.assertRaisesRegex(ValueError, "Track Game"):
+            self.card.build_interactive_card(
+                date(2026, 7, 27),
+                parsed,
+                {
+                    "period": "",
+                    "total_games": 0,
+                    "total_channels": 50,
+                    "hot_games": [],
+                },
+            )
 
     def test_quiet_day_card_is_grey_and_has_no_focus(self):
         parsed = {"is_quiet": True, "takeaways": [], "games": []}

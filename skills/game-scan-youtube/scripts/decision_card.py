@@ -77,11 +77,16 @@ def _why(game: dict) -> str:
 
 def build_decision_model(parsed: dict) -> dict:
     games = parsed.get("games", [])
-    confirmed = [
-        game
-        for game in games
-        if not game.get("is_update") and not game.get("is_watchlist")
-    ]
+    confirmed = []
+    for game in games:
+        if game.get("is_update") or game.get("is_watchlist"):
+            continue
+        source_url = _youtube_source(game)
+        if not source_url:
+            raise ValueError(
+                f"Confirmed new game has no YouTube source: {game['name']}"
+            )
+        confirmed.append({**game, "source_url": source_url})
     watchlist = [game for game in games if game.get("is_watchlist")]
     updates = [game for game in games if game.get("is_update")]
 
@@ -171,6 +176,22 @@ def _button(label: str, url: str, primary: bool = False) -> dict:
     }
 
 
+def _youtube_source(game: dict) -> Optional[str]:
+    for video in game.get("videos", []):
+        url = video.get("url", "").strip()
+        if re.match(
+            r"https?://(?:(?:www|m)\.)?youtube\.com/(?:watch\?|live/)",
+            url,
+            flags=re.IGNORECASE,
+        ) or re.match(
+            r"https?://(?:www\.)?youtu\.be/",
+            url,
+            flags=re.IGNORECASE,
+        ):
+            return url
+    return None
+
+
 def _download_target(game: dict) -> Optional[str]:
     raw = game.get("download_url", "")
     if not raw:
@@ -198,9 +219,9 @@ def _count_tags(model: dict) -> list:
 
 def _focus_actions(game: dict) -> list:
     actions = []
-    videos = game.get("videos", [])
-    if videos and videos[0].get("url"):
-        actions.append(_button("看视频", videos[0]["url"], primary=True))
+    source_url = game.get("source_url") or _youtube_source(game)
+    if source_url:
+        actions.append(_button("YouTube 原视频", source_url, primary=True))
     download_url = _download_target(game)
     if download_url:
         actions.append(_button("看商店", download_url))
@@ -253,7 +274,8 @@ def build_interactive_card(
     if model["supplemental"]:
         supplemental = "\n".join(
             f"• {game['name']}｜"
-            f"{_clip(game.get('hook') or game.get('status', ''), 32)}"
+            f"{_clip(game.get('hook') or game.get('status', ''), 26)}｜"
+            f"[YouTube 原视频]({game['source_url']})"
             for game in model["supplemental"][:4]
         )
         elements.append(_markdown(f"**➕ 补充**\n{supplemental}"))
@@ -293,9 +315,9 @@ def _post_text(text: str) -> list:
 
 def _post_links(game: dict) -> list:
     items = []
-    videos = game.get("videos", [])
-    if videos and videos[0].get("url"):
-        items.append({"tag": "a", "text": "看视频", "href": videos[0]["url"]})
+    source_url = game.get("source_url") or _youtube_source(game)
+    if source_url:
+        items.append({"tag": "a", "text": "YouTube 原视频", "href": source_url})
     download_url = _download_target(game)
     if download_url:
         if items:
@@ -335,12 +357,14 @@ def build_compact_post(
             lines.append(links)
 
     if model["supplemental"]:
-        labels = "；".join(
-            f"{game['name']}｜"
-            f"{_clip(game.get('hook') or game.get('status', ''), 26)}"
-            for game in model["supplemental"][:4]
-        )
-        lines.append(_post_text(f"➕ 补充｜{labels}"))
+        for index, game in enumerate(model["supplemental"][:4]):
+            prefix = "➕ 补充｜" if index == 0 else "• "
+            line = _post_text(
+                f"{prefix}{game['name']}｜"
+                f"{_clip(game.get('hook') or game.get('status', ''), 22)} · "
+            )
+            line.extend(_post_links(game))
+            lines.append(line)
     if model["trend"]:
         lines.append(_post_text(f"趋势｜{model['trend']}"))
 
@@ -377,6 +401,11 @@ def visible_card_text(card: dict) -> str:
         if element.get("tag") == "div":
             content = (element.get("text") or {}).get("content", "")
             if content:
+                content = re.sub(
+                    r"\[([^\]]+)\]\(https?://[^\s)]+\)",
+                    r"\1",
+                    content,
+                )
                 lines.extend(content.splitlines())
         elif element.get("tag") == "action":
             labels = [

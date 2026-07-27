@@ -416,6 +416,14 @@ The local Markdown report preserves full evidence. Feishu uses **Decision Card v
 6. **趋势一句话** — keep one cross-game judgment only.
 7. **观察与更新** — show counts, or at most 2 names when necessary; never inflate the confirmed-new count.
 
+First-hand source links are a publishing gate:
+
+- Every confirmed new game shown in Feishu must carry at least one direct YouTube video URL from its own report entry.
+- Focus games use a clearly labeled `YouTube 原视频` button.
+- Supplemental games use a clearly labeled inline `YouTube 原视频` link on the same line as the game.
+- The compact `post` fallback must preserve the same one-game-one-source mapping.
+- If any confirmed new game has no valid YouTube video URL, stop before publishing and name the affected game. Never silently send a source-less discovery or replace the source with only a store page.
+
 Card header semantics:
 
 - `orange`: at least one clear focus game.
@@ -492,6 +500,7 @@ Do not infer that the historical schedule is still active. Verify the current au
 - **Batch with pacing**: 5 channels per batch. Cross-reference search may 429 — space queries out and stop repeated failed retries.
 - **Automated push**: script auto-reads files and pushes, `--dry-run` for testing.
 - **Cross-reference**: same game on 2+ channels in same day = hot new test.
+- **First-hand evidence travels with the finding**: every confirmed new game keeps a direct YouTube source link in both the card and fallback.
 - **Honest**: quiet day = quiet day. Don't pad.
 - **Judgment first**: answer “what matters today” before listing discoveries.
 - **Signal weighted**: expand strong findings, compress weak ones, and never let a watchlist item inflate the new-game count.
