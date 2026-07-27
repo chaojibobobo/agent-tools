@@ -141,6 +141,95 @@ class DecisionCardModelTests(unittest.TestCase):
         )
 
 
+class DecisionCardRenderingTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.card = load_script_module("decision_card")
+
+    def test_interactive_card_has_decision_header_tags_and_actions(self):
+        card = self.card.build_interactive_card(
+            date(2026, 7, 27),
+            decision_fixture(),
+            {
+                "period": "",
+                "total_games": 0,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+        header = card["header"]
+        text = self.card.visible_card_text(card)
+
+        self.assertEqual("orange", header["template"])
+        self.assertEqual(
+            "今日值得看｜Explicit Focus",
+            header["title"]["content"],
+        )
+        self.assertEqual(
+            ["1 必看", "2 补充", "1 观察"],
+            [tag["text"]["content"] for tag in header["text_tag_list"]],
+        )
+        self.assertIn("🔥 必看｜Explicit Focus", text)
+        self.assertIn("为什么看：", text)
+        self.assertIn("核心机制：", text)
+        self.assertNotIn("low gameplay detail should be compacted", text)
+        self.assertLessEqual(len(text), 500)
+        self.assertLessEqual(len(text.splitlines()), 15)
+
+        actions = [
+            element
+            for element in card["elements"]
+            if element.get("tag") == "action"
+        ]
+        self.assertEqual(
+            "看视频",
+            actions[0]["actions"][0]["text"]["content"],
+        )
+
+    def test_quiet_day_card_is_grey_and_has_no_focus(self):
+        parsed = {"is_quiet": True, "takeaways": [], "games": []}
+        card = self.card.build_interactive_card(
+            date(2026, 7, 27),
+            parsed,
+            {
+                "period": "07-20 ~ 07-27",
+                "total_games": 3,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+
+        self.assertEqual("grey", card["header"]["template"])
+        self.assertEqual(
+            "今日无重点｜Quiet Day",
+            card["header"]["title"]["content"],
+        )
+        self.assertNotIn("必看", self.card.visible_card_text(card))
+
+    def test_compact_post_matches_card_hierarchy_and_budget(self):
+        post = self.card.build_compact_post(
+            date(2026, 7, 27),
+            decision_fixture(),
+            {
+                "period": "",
+                "total_games": 0,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+        text = self.card.visible_post_text(post)
+
+        self.assertIn("结论｜", text)
+        self.assertIn("🔥 必看｜Explicit Focus", text)
+        self.assertIn("为什么看｜", text)
+        self.assertIn("核心机制｜", text)
+        self.assertIn("➕ 补充｜", text)
+        self.assertIn("趋势｜", text)
+        self.assertNotIn("low gameplay detail should be compacted", text)
+        self.assertLessEqual(len(text), 500)
+        self.assertLessEqual(len(text.splitlines()), 15)
+
+
 class ReportParsingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -358,16 +447,21 @@ class FeishuExpressionTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "Game Scout 07-25｜1 重点 · 1 补充 · 1 观察 · 1 更新",
+            "今日值得看｜High Signal",
             title,
         )
-        self.assertLess(text.index("今日判断"), text.index("先看"))
-        self.assertLess(text.index("先看"), text.index("其他新增"))
-        self.assertLess(text.index("其他新增"), text.index("观察与更新"))
-        self.assertIn("high gameplay detail", text)
+        self.assertLess(text.index("结论｜"), text.index("🔥 必看｜High Signal"))
+        self.assertLess(
+            text.index("🔥 必看｜High Signal"),
+            text.index("➕ 补充｜Low Signal"),
+        )
+        self.assertIn("为什么看｜4 频道同时覆盖", text)
+        self.assertIn("核心机制｜4-channel launch", text)
+        self.assertNotIn("high gameplay detail", text)
         self.assertNotIn("low gameplay detail should be compacted", text)
-        self.assertIn("1 频道", text)
-        self.assertNotIn("1 channel", text)
+        self.assertIn("⚪ 观察 1 款 · 更新 1 款", text)
+        self.assertLessEqual(len(text), 500)
+        self.assertLessEqual(len(text.splitlines()), 15)
 
 
 class CollectorTests(unittest.TestCase):

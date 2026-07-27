@@ -1,6 +1,7 @@
 """Build compact decision-first Feishu presentation payloads."""
 
 import re
+from datetime import date
 from typing import Optional
 
 
@@ -144,3 +145,257 @@ def build_decision_model(parsed: dict) -> dict:
         "trend": trend,
         "counts": " · ".join(count_parts),
     }
+
+
+def _tag(content: str, color: str) -> dict:
+    return {
+        "tag": "text_tag",
+        "text": {"tag": "plain_text", "content": content},
+        "color": color,
+    }
+
+
+def _markdown(content: str) -> dict:
+    return {
+        "tag": "div",
+        "text": {"tag": "lark_md", "content": content},
+    }
+
+
+def _button(label: str, url: str, primary: bool = False) -> dict:
+    return {
+        "tag": "button",
+        "text": {"tag": "plain_text", "content": label},
+        "type": "primary" if primary else "default",
+        "url": url,
+    }
+
+
+def _download_target(game: dict) -> Optional[str]:
+    raw = game.get("download_url", "")
+    if not raw:
+        return None
+    markdown_link = re.search(r"\[[^\]]+\]\((https?://[^\s)]+)\)", raw)
+    if markdown_link:
+        return markdown_link.group(1)
+    raw_link = re.search(r"https?://[^\s)]+", raw)
+    return raw_link.group(0) if raw_link else None
+
+
+def _count_tags(model: dict) -> list:
+    candidates = [
+        (len(model["focus"]), "必看", "orange"),
+        (len(model["supplemental"]), "补充", "blue"),
+        (len(model["watchlist"]), "观察", "neutral"),
+        (len(model["updates"]), "更新", "turquoise"),
+    ]
+    return [
+        _tag(f"{count} {label}", color)
+        for count, label, color in candidates
+        if count
+    ][:3]
+
+
+def _focus_actions(game: dict) -> list:
+    actions = []
+    videos = game.get("videos", [])
+    if videos and videos[0].get("url"):
+        actions.append(_button("看视频", videos[0]["url"], primary=True))
+    download_url = _download_target(game)
+    if download_url:
+        actions.append(_button("看商店", download_url))
+    return actions
+
+
+def build_interactive_card(
+    report_date: date,
+    parsed: dict,
+    summary: dict,
+) -> dict:
+    model = build_decision_model(parsed)
+    if parsed.get("is_quiet"):
+        period = summary.get("period", "")
+        recent_count = summary.get("total_games", 0)
+        detail = f"过去 7 天记录 {recent_count} 款新游戏"
+        if period:
+            detail += f"（{period}）"
+        return {
+            "config": {"wide_screen_mode": True},
+            "header": {
+                "template": "grey",
+                "title": {
+                    "tag": "plain_text",
+                    "content": "今日无重点｜Quiet Day",
+                },
+            },
+            "elements": [
+                _markdown(f"**结论**\n24 小时内没有值得立即展开的新项目。"),
+                _markdown(f"**7 日回看**\n{detail}"),
+            ],
+        }
+
+    elements = [
+        _markdown(f"**结论**\n{model['conclusion']}"),
+        {"tag": "hr"},
+    ]
+    for focus in model["focus"]:
+        elements.append(
+            _markdown(
+                f"**🔥 必看｜{focus['name']}**\n"
+                f"为什么看：{focus['why']}\n"
+                f"核心机制：{focus['mechanism']}"
+            )
+        )
+        actions = _focus_actions(focus)
+        if actions:
+            elements.append({"tag": "action", "actions": actions})
+
+    if model["supplemental"]:
+        supplemental = "\n".join(
+            f"• {game['name']}｜"
+            f"{_clip(game.get('hook') or game.get('status', ''), 32)}"
+            for game in model["supplemental"][:4]
+        )
+        elements.append(_markdown(f"**➕ 补充**\n{supplemental}"))
+
+    if model["trend"]:
+        elements.append(_markdown(f"**趋势一句话**\n{model['trend']}"))
+
+    observations = []
+    if model["watchlist"]:
+        observations.append(f"观察 {len(model['watchlist'])} 款")
+    if model["updates"]:
+        observations.append(f"更新 {len(model['updates'])} 款")
+    if observations:
+        elements.append(_markdown(f"**⚪ {' · '.join(observations)}**"))
+
+    header = {
+        "template": "orange" if model["focus"] else "blue",
+        "title": {
+            "tag": "plain_text",
+            "content": model["headline"],
+        },
+    }
+    tags = _count_tags(model)
+    if tags:
+        header["text_tag_list"] = tags
+
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": header,
+        "elements": elements,
+    }
+
+
+def _post_text(text: str) -> list:
+    return [{"tag": "text", "text": text}]
+
+
+def _post_links(game: dict) -> list:
+    items = []
+    videos = game.get("videos", [])
+    if videos and videos[0].get("url"):
+        items.append({"tag": "a", "text": "看视频", "href": videos[0]["url"]})
+    download_url = _download_target(game)
+    if download_url:
+        if items:
+            items.append({"tag": "text", "text": " · "})
+        items.append({"tag": "a", "text": "看商店", "href": download_url})
+    return items
+
+
+def build_compact_post(
+    report_date: date,
+    parsed: dict,
+    summary: dict,
+) -> dict:
+    model = build_decision_model(parsed)
+    if parsed.get("is_quiet"):
+        period = summary.get("period", "")
+        title = "今日无重点｜Quiet Day"
+        lines = [
+            _post_text("结论｜24 小时内没有值得立即展开的新项目。"),
+            _post_text(
+                f"7 日回看｜{period} · {summary.get('total_games', 0)} 款新游戏"
+            ),
+        ]
+        return {"zh_cn": {"title": title, "content": lines}}
+
+    lines = [_post_text(f"结论｜{model['conclusion']}")]
+    for focus in model["focus"]:
+        lines.extend(
+            [
+                _post_text(f"🔥 必看｜{focus['name']}"),
+                _post_text(f"为什么看｜{focus['why']}"),
+                _post_text(f"核心机制｜{focus['mechanism']}"),
+            ]
+        )
+        links = _post_links(focus)
+        if links:
+            lines.append(links)
+
+    if model["supplemental"]:
+        labels = "；".join(
+            f"{game['name']}｜"
+            f"{_clip(game.get('hook') or game.get('status', ''), 26)}"
+            for game in model["supplemental"][:4]
+        )
+        lines.append(_post_text(f"➕ 补充｜{labels}"))
+    if model["trend"]:
+        lines.append(_post_text(f"趋势｜{model['trend']}"))
+
+    observations = []
+    if model["watchlist"]:
+        observations.append(f"观察 {len(model['watchlist'])} 款")
+    if model["updates"]:
+        observations.append(f"更新 {len(model['updates'])} 款")
+    if observations:
+        lines.append(_post_text(f"⚪ {' · '.join(observations)}"))
+
+    return {
+        "zh_cn": {
+            "title": model["headline"],
+            "content": lines,
+        }
+    }
+
+
+def visible_card_text(card: dict) -> str:
+    lines = []
+    header = card.get("header", {})
+    title = (header.get("title") or {}).get("content")
+    if title:
+        lines.append(title)
+    tags = [
+        tag.get("text", {}).get("content", "")
+        for tag in header.get("text_tag_list", [])
+    ]
+    if tags:
+        lines.append(" ".join(f"[{tag}]" for tag in tags if tag))
+
+    for element in card.get("elements", []):
+        if element.get("tag") == "div":
+            content = (element.get("text") or {}).get("content", "")
+            if content:
+                lines.extend(content.splitlines())
+        elif element.get("tag") == "action":
+            labels = [
+                (action.get("text") or {}).get("content", "")
+                for action in element.get("actions", [])
+            ]
+            if labels:
+                lines.append(" ".join(f"[{label}]" for label in labels if label))
+    return "\n".join(lines)
+
+
+def visible_post_text(post: dict) -> str:
+    lines = []
+    zh_cn = post.get("zh_cn", {})
+    title = zh_cn.get("title")
+    if title:
+        lines.append(title)
+    for group in zh_cn.get("content", []):
+        line = "".join(item.get("text", "") for item in group)
+        if line:
+            lines.append(line)
+    return "\n".join(lines)
