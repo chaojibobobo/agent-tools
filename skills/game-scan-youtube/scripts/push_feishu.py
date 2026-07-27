@@ -21,7 +21,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from decision_card import build_compact_post
+from decision_card import (
+    build_compact_post,
+    build_interactive_card,
+    visible_card_text,
+)
 
 BASE_URL = "https://open.feishu.cn/open-apis"
 
@@ -484,43 +488,102 @@ def build_feishu_content(
     return build_compact_post(report_date, parsed, summary)
 
 
-def push_report(post_content: dict, dry_run: bool = False) -> dict:
-    """Send or dry-run the Feishu message."""
+def push_report(
+    card_content: dict,
+    fallback_content: dict,
+    dry_run: bool = False,
+    request_fn=post_json,
+    token_fn=get_token,
+    receive_id: Optional[str] = None,
+) -> dict:
+    """Send an interactive card, with one compact-post fallback before receipt."""
     if dry_run:
-        title = post_content["zh_cn"]["title"]
-        print(f"[DRY RUN] Title: {title}")
-        for line_group in post_content["zh_cn"]["content"]:
-            line_text = ""
-            for item in line_group:
-                t = item.get("text", "")
-                href = item.get("href", "")
-                if href:
-                    line_text += f"{t}({href})"
-                else:
-                    line_text += t
-            print(line_text)
+        print("[DRY RUN] Type: interactive")
+        print(visible_card_text(card_content))
         print()
-        return {"status": "dry-run", "message_id": None}
+        return {
+            "status": "dry-run",
+            "message_id": None,
+            "message_format": "interactive",
+            "fallback_used": False,
+        }
 
-    token = get_token()
-    data = post_json(
+    token = token_fn()
+    target_open_id = receive_id or os.environ["FEISHU_USER_OPEN_ID"]
+    common = {
+        "headers": {"Authorization": f"Bearer {token}"},
+        "query": {"receive_id_type": "open_id"},
+    }
+    card_data = request_fn(
         f"{BASE_URL}/im/v1/messages",
         {
-            "receive_id": os.environ["FEISHU_USER_OPEN_ID"],
-            "msg_type": "post",
-            "content": json.dumps(post_content),
+            "receive_id": target_open_id,
+            "msg_type": "interactive",
+            "content": json.dumps(card_content),
         },
-        headers={
-            "Authorization": f"Bearer {token}",
-        },
-        query={"receive_id_type": "open_id"},
+        **common,
     )
-    if data.get("code") != 0:
-        print(f"Send failed: {data}")
-        sys.exit(1)
-    message_id = data["data"]["message_id"]
-    print(f"Pushed! message_id: {message_id}")
-    return {"status": "sent", "message_id": message_id}
+    if card_data.get("code") == 0:
+        message_id = card_data["data"]["message_id"]
+        return {
+            "status": "sent",
+            "message_id": message_id,
+            "message_format": "interactive",
+            "fallback_used": False,
+        }
+
+    unexpected_message_id = (card_data.get("data") or {}).get("message_id")
+    if unexpected_message_id:
+        raise RuntimeError(
+            "card returned a message_id with a failure code; refusing fallback"
+        )
+
+    fallback_data = request_fn(
+        f"{BASE_URL}/im/v1/messages",
+        {
+            "receive_id": target_open_id,
+            "msg_type": "post",
+            "content": json.dumps(fallback_content),
+        },
+        **common,
+    )
+    if fallback_data.get("code") != 0:
+        raise RuntimeError(
+            f"card failed: {card_data}; fallback failed: {fallback_data}"
+        )
+    message_id = fallback_data["data"]["message_id"]
+    return {
+        "status": "sent",
+        "message_id": message_id,
+        "message_format": "post",
+        "fallback_used": True,
+    }
+
+
+def write_receipt(work_dir: Path, report_date: str, push_result: dict) -> Path:
+    """Persist the actual delivered format together with its message id."""
+    receipt_dir = work_dir / "receipts"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    receipt_path = receipt_dir / f"{report_date}.feishu.json"
+    temporary = receipt_path.with_suffix(".json.tmp")
+    temporary.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "date": report_date,
+                "status": push_result["status"],
+                "message_id": push_result["message_id"],
+                "message_format": push_result["message_format"],
+                "fallback_used": push_result["fallback_used"],
+                "sent_at": datetime.now().astimezone().isoformat(),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n"
+    )
+    temporary.replace(receipt_path)
+    return receipt_path
 
 
 def main():
@@ -555,28 +618,19 @@ def main():
     parsed = parse_report(report_path)
     channels_path = work_dir / "channels.json"
     summary = build_7day_summary(seen_games_path, report_date, channels_path)
-    post_content = build_feishu_content(report_date, parsed, summary)
-    push_result = push_report(post_content, dry_run=args.dry_run)
+    card_content = build_interactive_card(report_date, parsed, summary)
+    fallback_content = build_compact_post(report_date, parsed, summary)
+    push_result = push_report(
+        card_content,
+        fallback_content,
+        dry_run=args.dry_run,
+    )
     if not args.dry_run:
-        receipt_dir = work_dir / "receipts"
-        receipt_dir.mkdir(parents=True, exist_ok=True)
-        receipt_path = receipt_dir / f"{args.date}.feishu.json"
-        temporary = receipt_path.with_suffix(".json.tmp")
-        temporary.write_text(
-            json.dumps(
-                {
-                    "schema_version": 1,
-                    "date": args.date,
-                    "status": push_result["status"],
-                    "message_id": push_result["message_id"],
-                    "sent_at": datetime.now().astimezone().isoformat(),
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-            + "\n"
+        print(
+            f"Pushed {push_result['message_format']}! "
+            f"message_id: {push_result['message_id']}"
         )
-        temporary.replace(receipt_path)
+        receipt_path = write_receipt(work_dir, args.date, push_result)
         print(f"Receipt: {receipt_path}")
 
 

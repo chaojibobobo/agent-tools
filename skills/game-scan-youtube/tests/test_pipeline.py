@@ -464,6 +464,93 @@ class FeishuExpressionTests(unittest.TestCase):
         self.assertLessEqual(len(text.splitlines()), 15)
 
 
+class FeishuDeliveryTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.push_feishu = load_script_module("push_feishu")
+
+    def test_card_failure_before_message_id_falls_back_once(self):
+        calls = []
+
+        def fake_post(url, payload, headers=None, query=None):
+            calls.append(payload["msg_type"])
+            if payload["msg_type"] == "interactive":
+                return {"code": 230099, "msg": "invalid card"}
+            return {"code": 0, "data": {"message_id": "om_fallback"}}
+
+        result = self.push_feishu.push_report(
+            {"header": {}, "elements": []},
+            {"zh_cn": {"title": "fallback", "content": []}},
+            request_fn=fake_post,
+            token_fn=lambda: "fixture-token",
+            receive_id="fixture-open-id",
+        )
+
+        self.assertEqual(["interactive", "post"], calls)
+        self.assertEqual("om_fallback", result["message_id"])
+        self.assertEqual("post", result["message_format"])
+        self.assertTrue(result["fallback_used"])
+
+    def test_successful_card_never_sends_fallback(self):
+        calls = []
+
+        def fake_post(url, payload, headers=None, query=None):
+            calls.append(payload["msg_type"])
+            return {"code": 0, "data": {"message_id": "om_card"}}
+
+        result = self.push_feishu.push_report(
+            {"header": {}, "elements": []},
+            {"zh_cn": {"title": "fallback", "content": []}},
+            request_fn=fake_post,
+            token_fn=lambda: "fixture-token",
+            receive_id="fixture-open-id",
+        )
+
+        self.assertEqual(["interactive"], calls)
+        self.assertEqual("interactive", result["message_format"])
+        self.assertFalse(result["fallback_used"])
+
+    def test_failure_code_with_message_id_refuses_fallback(self):
+        calls = []
+
+        def fake_post(url, payload, headers=None, query=None):
+            calls.append(payload["msg_type"])
+            return {
+                "code": 230099,
+                "msg": "ambiguous response",
+                "data": {"message_id": "om_ambiguous"},
+            }
+
+        with self.assertRaisesRegex(RuntimeError, "refusing fallback"):
+            self.push_feishu.push_report(
+                {"header": {}, "elements": []},
+                {"zh_cn": {"title": "fallback", "content": []}},
+                request_fn=fake_post,
+                token_fn=lambda: "fixture-token",
+                receive_id="fixture-open-id",
+            )
+
+        self.assertEqual(["interactive"], calls)
+
+    def test_receipt_records_actual_message_format(self):
+        with tempfile.TemporaryDirectory() as raw_dir:
+            receipt_path = self.push_feishu.write_receipt(
+                Path(raw_dir),
+                "2026-07-27",
+                {
+                    "status": "sent",
+                    "message_id": "om_card",
+                    "message_format": "interactive",
+                    "fallback_used": False,
+                },
+            )
+            receipt = json.loads(receipt_path.read_text())
+
+        self.assertEqual("interactive", receipt["message_format"])
+        self.assertFalse(receipt["fallback_used"])
+        self.assertEqual("om_card", receipt["message_id"])
+
+
 class CollectorTests(unittest.TestCase):
     def test_fixture_feed_is_filtered_to_exact_24_hour_window(self):
         """Catches collectors that include stale entries or depend on live network in tests."""
