@@ -1,0 +1,815 @@
+{
+  "last_updated": "2026-06-16",
+  "weight_system": {
+    "0": "Bench/substitute — kept for full-channel audits only",
+    "1-2": "Needs validation — skip unless time allows",
+    "3-4": "Occasional output — scan every run (light)",
+    "5-6": "Regular — scan every run",
+    "7-8": "High quality, frequent — scan every run, high priority",
+    "9-10": "Seed channels (user-confirmed) — always first batch"
+  },
+  "seed_channels": [
+    {
+      "id": "@cutegames66",
+      "channel_id": "UC0nBV2jPf6n75nL2qSmvKfg",
+      "name": "Cute Games",
+      "url": "https://www.youtube.com/@cutegames66",
+      "title_pattern": "Game Name: Genre Gameplay Mobile Android",
+      "weight": 10,
+      "tags": [
+        "SLG",
+        "survival",
+        "strategy",
+        "base-building"
+      ],
+      "note": "用户提供种子频道",
+      "relevant_videos_7d": 5
+    },
+    {
+      "id": "@AetherFyre",
+      "channel_id": "UCINn3KOvHKGgHiUrv7P161Q",
+      "name": "AetherFyre",
+      "url": "https://www.youtube.com/@AetherFyre",
+      "title_pattern": "Game Name Gameplay Android / iOS",
+      "weight": 10,
+      "tags": [
+        "strategy",
+        "RPG",
+        "board",
+        "SLG"
+      ],
+      "note": "用户提供种子频道，覆盖面广，日更 10+ 视频",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@MobileGameplaysTV",
+      "channel_id": "UCSih1MbFW0BosGjYwHxVHvw",
+      "name": "MobileGameplaysTV",
+      "url": "https://www.youtube.com/@MobileGameplaysTV",
+      "title_pattern": "Game Name Gameplay Android / iOS",
+      "weight": 9,
+      "tags": [
+        "strategy",
+        "SLG",
+        "new-games",
+        "first-look"
+      ],
+      "note": "用户提供种子频道，新游首发为主",
+      "relevant_videos_7d": 3
+    },
+    {
+      "id": "@palmassgames",
+      "channel_id": "UCglkSCDDLUZT3aB8kESJNNg",
+      "name": "PalmassGames",
+      "url": "https://www.youtube.com/@palmassgames",
+      "title_pattern": "Game Name Gameplay | Android",
+      "weight": 8,
+      "tags": [
+        "strategy",
+        "SLG",
+        "survival",
+        "tower-defense"
+      ],
+      "note": "用户提供种子频道，确认停更中",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@elkolasa",
+      "channel_id": "UCjFGyMnBqyPoO_Ti6NYLKfQ",
+      "name": "Elkholasa Gaming",
+      "url": "https://www.youtube.com/@elkolasa",
+      "title_pattern": "Game Name | Gameplay Walkthrough (Android/iOS)",
+      "weight": 10,
+      "tags": [
+        "SLG",
+        "RTS",
+        "strategy",
+        "4X",
+        "base-building",
+        "survival"
+      ],
+      "note": "用户提供种子频道，146K 订阅，SLG/RTS 覆盖面极广",
+      "relevant_videos_7d": 9
+    }
+  ],
+  "discovered_channels": [
+    {
+      "id": "@adeptless",
+      "channel_id": "UCh62rgVkP6IicMNdi8gRqzg",
+      "name": "Adeptless",
+      "url": "https://www.youtube.com/@adeptless",
+      "weight": 7,
+      "tags": [
+        "RPG",
+        "survival",
+        "strategy",
+        "ARPG"
+      ],
+      "note": "日更 10+，覆盖生存策略游戏，05-17 高产出 Go Go Springfield / Gun Girls / Zombite Patrol",
+      "discovered_via": "Last Refuge: Survival",
+      "discovered_date": "2026-05-13",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@irogames",
+      "channel_id": "UCeI2-eBzj6lkGvESuWRIdUA",
+      "name": "iroGames",
+      "url": "https://www.youtube.com/@irogames",
+      "weight": 7,
+      "tags": [
+        "4X",
+        "strategy",
+        "SLG",
+        "base-building"
+      ],
+      "note": "高质量频道，有 Strategy 和 4X playlist，覆盖面广",
+      "discovered_via": "Titan Rush / Last Refuge",
+      "discovered_date": "2026-05-12",
+      "relevant_videos_7d": 13
+    },
+    {
+      "id": "@proapk",
+      "channel_id": "UC2FTn5AA-fLR5c-k6piUu2Q",
+      "name": "PROAPK",
+      "url": "https://www.youtube.com/@proapk",
+      "weight": 6,
+      "tags": [
+        "strategy",
+        "SLG",
+        "RTS",
+        "mobile",
+        "walkthrough"
+      ],
+      "note": "234K 订阅，7.9K 视频，大型手游频道",
+      "discovered_via": "Order of Kings 交叉引用",
+      "discovered_date": "2026-05-13",
+      "relevant_videos_7d": 11
+    },
+    {
+      "id": "@jcfyoutube",
+      "channel_id": "UCYEw2obvAbRIVtni8JVSKhw",
+      "name": "JCF",
+      "url": "https://www.youtube.com/@jcfyoutube",
+      "weight": 5,
+      "tags": [
+        "SLG",
+        "RTS",
+        "4X",
+        "survival",
+        "mobile-strategy"
+      ],
+      "note": "Top 10 mobile strategy/RTS 游戏排行榜，策略游戏专注度高",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@mobogamezone629",
+      "channel_id": "UCLiTs3MIxZFFUdT_Z0Q0Q5w",
+      "name": "MOBO GAME ZONE",
+      "url": "https://www.youtube.com/@mobogamezone629",
+      "weight": 5,
+      "tags": [
+        "strategy",
+        "RTS",
+        "MMORPG",
+        "mobile-lists"
+      ],
+      "note": "Top 25 系列排行榜，覆盖策略/RTS 新游",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 5
+    },
+    {
+      "id": "@ATYT",
+      "channel_id": "UC2JIdBq8ctbneEZgpckj-AA",
+      "name": "Android Tools",
+      "url": "https://www.youtube.com/@ATYT",
+      "weight": 5,
+      "tags": [
+        "strategy",
+        "4X",
+        "tower-defense",
+        "kingdom-builder"
+      ],
+      "note": "Top 10/20 系列排行榜，策略/4X/塔防专注",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 1
+    },
+    {
+      "id": "@Pryszard",
+      "channel_id": "UCRf4-iCB2SXg9OsuFauzlsw",
+      "name": "Pryszard Android iOS Gameplays",
+      "url": "https://www.youtube.com/@Pryszard",
+      "weight": 6,
+      "tags": [
+        "strategy",
+        "survival",
+        "all-genres",
+        "walkthrough"
+      ],
+      "note": "1.7M 订阅，15000+ 视频，全品类覆盖含策略，Titan Rush 有覆盖",
+      "discovered_via": "Titan Rush 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@GameGen",
+      "channel_id": "UCs1tn3KAnVlfsxpC4QRF6hg",
+      "name": "GameGen",
+      "url": "https://www.youtube.com/@GameGen",
+      "weight": 5,
+      "tags": [
+        "RTS",
+        "strategy",
+        "simulation",
+        "upcoming-games"
+      ],
+      "note": "213K 订阅，Top upcoming RTS/strategy/sim 游戏排行榜",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@THEGAMICS",
+      "channel_id": "UC7yTBtBOawGnbSMtfq-iUow",
+      "name": "THE GAMICS",
+      "url": "https://www.youtube.com/@THEGAMICS",
+      "weight": 5,
+      "tags": [
+        "RTS",
+        "strategy",
+        "mobile",
+        "top-lists"
+      ],
+      "note": "Top 4 RTS Games for Android 2026 等策略游戏榜单",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@FYXOfficial",
+      "channel_id": "UCNZtN17EgE_CborobGd4SBQ",
+      "name": "FYX Official",
+      "url": "https://www.youtube.com/@FYXOfficial",
+      "weight": 5,
+      "tags": [
+        "strategy",
+        "SLG",
+        "survival"
+      ],
+      "note": "覆盖 Throne of 3Q、Aqua Survival、Gun Girls、RELLION 等多款追踪游戏",
+      "discovered_via": "Throne of 3Q 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@ANDROOSGAMEPLAY",
+      "channel_id": "UCv3K1J2azM7X6qHMIbgP4IA",
+      "name": "ANDROOSGAMEPLAY",
+      "url": "https://www.youtube.com/@ANDROOSGAMEPLAY",
+      "weight": 4,
+      "tags": [
+        "strategy",
+        "war",
+        "SLG"
+      ],
+      "note": "偏杂食（PvZ/horror/shooter），SLG 覆盖密度低",
+      "discovered_via": "War Vow",
+      "discovered_date": "2026-05-12",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@ZyMobileGameplay",
+      "channel_id": "UC_a0kACyJBpolI86S2b6HiQ",
+      "name": "Zy Mobile Gameplay",
+      "url": "https://www.youtube.com/@ZyMobileGameplay",
+      "weight": 5,
+      "tags": [
+        "tower-defense",
+        "strategy",
+        "survival",
+        "idle"
+      ],
+      "note": "~2.1K 订阅，覆盖 TD/策略/生存，Survival 28 Days 有覆盖",
+      "discovered_via": "Survival 28 Days 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@RTSMobileGaming",
+      "channel_id": "UCIArWk8W9g_C7w6_MFCRefQ",
+      "name": "RTS Mobile",
+      "url": "https://www.youtube.com/@RTSMobileGaming",
+      "weight": 5,
+      "tags": [
+        "RTS",
+        "strategy",
+        "mobile"
+      ],
+      "note": "专注 RTS 手游频道，meta build 和 walkthrough",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 7
+    },
+    {
+      "id": "@LenzyGames",
+      "channel_id": "UCiO339C626AghKqq6PFxuLg",
+      "name": "Lenzy Games",
+      "url": "https://www.youtube.com/@LenzyGames",
+      "weight": 4,
+      "tags": [
+        "strategy",
+        "survival",
+        "RPG"
+      ],
+      "note": "覆盖 Aqua Survival、Hordes、RELLION、Gun Girls 等多款追踪游戏",
+      "discovered_via": "Aqua Survival / Hordes 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@MobileGamesDaily",
+      "channel_id": "UCBW50ONLUKSiDCnUcHylt_A",
+      "name": "MobileGamesDaily",
+      "url": "https://www.youtube.com/@MobileGamesDaily",
+      "weight": 4,
+      "tags": [
+        "strategy",
+        "survival",
+        "mobile"
+      ],
+      "note": "覆盖 War Vow 等策略游戏",
+      "discovered_via": "War Vow 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@Maximumandroid",
+      "channel_id": "UChJWfOP9b-0UclIynsUuNUA",
+      "name": "Maximumandroid - Just Good Games",
+      "url": "https://www.youtube.com/@Maximumandroid",
+      "weight": 4,
+      "tags": [
+        "strategy",
+        "survival",
+        "mobile"
+      ],
+      "note": "覆盖 War Vow 等策略游戏",
+      "discovered_via": "War Vow 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@MikeFringe",
+      "channel_id": "UC12QjFFdU1yUlFScFBaSnla",
+      "name": "Mike Fringe",
+      "url": "https://www.youtube.com/@MikeFringe",
+      "weight": 2,
+      "tags": [
+        "RPG",
+        "strategy",
+        "survival",
+        "action"
+      ],
+      "note": "3200+ 视频，新游戏首发覆盖面广，策略/生存有涉及",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@BluMobileGames",
+      "channel_id": "UCBkUvn5XI22rzoamJ0V7G2w",
+      "name": "BLU Mobile Games",
+      "url": "https://www.youtube.com/@BluMobileGames",
+      "weight": 3,
+      "tags": [
+        "action",
+        "strategy",
+        "casual"
+      ],
+      "note": "手游 gameplay 频道，含策略类",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@KenYuGames",
+      "channel_id": "UCkVZAkXnOL7LbWm078swd7Q",
+      "name": "KenYu Games",
+      "url": "https://www.youtube.com/@KenYuGames",
+      "weight": 4,
+      "tags": [
+        "SLG",
+        "strategy",
+        "three-kingdoms"
+      ],
+      "note": "覆盖 Heavenly Demon 三國天魔、Gun Girls 等策略游戏",
+      "discovered_via": "Heavenly Demon / Gun Girls 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 12
+    },
+    {
+      "id": "@KGameplayTV",
+      "channel_id": "UCJl3Dv0DZEl18l46-xowzzg",
+      "name": "KGameplayTV",
+      "url": "https://www.youtube.com/@KGameplayTV",
+      "weight": 4,
+      "tags": [
+        "survival",
+        "RPG",
+        "mobile"
+      ],
+      "note": "覆盖 RELLION: NPC Survival 等游戏",
+      "discovered_via": "RELLION 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 1
+    },
+    {
+      "id": "@KnightGaming",
+      "channel_id": "UCrr3Z0u6dtlAGMVP7IO1_KA",
+      "name": "Knight Gaming",
+      "url": "https://www.youtube.com/@KnightGaming",
+      "weight": 3,
+      "tags": [
+        "survival",
+        "strategy"
+      ],
+      "note": "覆盖 Last Beacon: Survival",
+      "discovered_via": "Last Beacon 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@RyoXIIIGaming",
+      "channel_id": "UCV0uDT0PD-sNfNsjJw3S-6Q",
+      "name": "RyoXIII Gaming",
+      "url": "https://www.youtube.com/@RyoXIIIGaming",
+      "weight": 3,
+      "tags": [
+        "survival",
+        "strategy"
+      ],
+      "note": "覆盖 Last Beacon: Survival",
+      "discovered_via": "Last Beacon 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 15
+    },
+    {
+      "id": "@Plyzon",
+      "channel_id": "UCXx184MZwnUvwO8oUOAJBLA",
+      "name": "Plyzon",
+      "url": "https://www.youtube.com/@Plyzon",
+      "weight": 3,
+      "tags": [
+        "tower-defense",
+        "strategy",
+        "top-lists"
+      ],
+      "note": "TOP 15 TD Games for Android 2026 等塔防策略榜单",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@KTNMobileGameplay",
+      "channel_id": "UCAT71CMuSEYvvx8qhIta72Q",
+      "name": "KTN Mobile Gameplay",
+      "url": "https://www.youtube.com/@KTNMobileGameplay",
+      "weight": 3,
+      "tags": [
+        "survival",
+        "mobile"
+      ],
+      "note": "覆盖 CrisisX 开放世界生存",
+      "discovered_via": "CrisisX 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 5
+    },
+    {
+      "id": "@Gamunime",
+      "channel_id": "UCLVQu3QGZooOR03VL9bTbXQ",
+      "name": "Gamunime",
+      "url": "https://www.youtube.com/@Gamunime",
+      "weight": 4,
+      "tags": [
+        "anime",
+        "strategy",
+        "shooter"
+      ],
+      "note": "覆盖 Aqua Survival、Hordes、RELLION、Gun Girls 等多款追踪游戏",
+      "discovered_via": "Aqua Survival / Hordes 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "channel_id": "UCDiztpKfwp78Po0bAp-oNIg",
+      "name": "MR.Boneflow Channel",
+      "url": "https://www.youtube.com/@MR.Boneflowchannel",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "RTS",
+        "early-access",
+        "MMORPG"
+      ],
+      "note": "最新视频为 MMORPG，策略覆盖密度低",
+      "discovered_via": "Lost Horizon",
+      "discovered_date": "2026-05-12",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@Gachaman",
+      "channel_id": "UC1acS1ETGlVRXBRQ25BNzVG",
+      "name": "Gachaman",
+      "url": "https://www.youtube.com/@Gachaman",
+      "weight": 1,
+      "tags": [
+        "RPG",
+        "gacha",
+        "survival"
+      ],
+      "note": "覆盖 RELLION: NPC Survival",
+      "discovered_via": "RELLION 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@GamesWithCodes",
+      "channel_id": "UCJmYnozuqG7MjyY2T4H-59Q",
+      "name": "Games With Codes",
+      "url": "https://www.youtube.com/@GamesWithCodes",
+      "weight": 2,
+      "tags": [
+        "survival",
+        "RPG"
+      ],
+      "note": "以 redeem code 内容为主，覆盖 RELLION",
+      "discovered_via": "RELLION 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@Walle",
+      "channel_id": "UCrbTYiA9lPBCMWFoZPr58mQ",
+      "name": "Walle",
+      "url": "https://www.youtube.com/@Walle",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "survival",
+        "base-building"
+      ],
+      "note": "覆盖 Survival Tactics 策略生存",
+      "discovered_via": "Survival Tactics 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@Nevaran",
+      "channel_id": "UC09ffo1o0P2c-c_fAm_FXrw",
+      "name": "Nevaran",
+      "url": "https://www.youtube.com/@Nevaran",
+      "weight": 2,
+      "tags": [
+        "survival",
+        "open-world"
+      ],
+      "note": "覆盖 CrisisX 开放世界生存",
+      "discovered_via": "CrisisX 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@EasilyDistractedGames",
+      "channel_id": "UC4I0CcOSpOgEbEIgnh77_zw",
+      "name": "Easily Distracted Games",
+      "url": "https://www.youtube.com/@EasilyDistractedGames",
+      "weight": 2,
+      "tags": [
+        "tower-defense",
+        "base-building",
+        "strategy"
+      ],
+      "note": "覆盖 base-building TD 游戏榜单",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@AboboKnows",
+      "channel_id": "UCkhzH-KI7DQOHcd_gI82D3g",
+      "name": "AboboKnows",
+      "url": "https://www.youtube.com/@AboboKnows",
+      "weight": 2,
+      "tags": [
+        "survival",
+        "tower-defense"
+      ],
+      "note": "覆盖 Signal Zone 生存塔防",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@GamerZakh",
+      "channel_id": "UCl8UfR1WkSJS666PlNsn6Yg",
+      "name": "GamerZakh",
+      "url": "https://www.youtube.com/@GamerZakh",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "RTS",
+        "tower-defense"
+      ],
+      "note": "策略游戏推荐，主要是 PC/Steam，手机内容较少",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@CodeBoxOff",
+      "channel_id": "UC_fQNDrOiSA7KKI7AGo3-TQ",
+      "name": "CodeBox Gameplay",
+      "url": "https://www.youtube.com/@CodeBoxOff",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "android"
+      ],
+      "note": "覆盖 Gun Girls: Mist Survival 策略类",
+      "discovered_via": "Gun Girls 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@QosKu",
+      "channel_id": "UC-ytzdbfDYVFi8o1kl5WQ3g",
+      "name": "QosKu",
+      "url": "https://www.youtube.com/@QosKu",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "shooter"
+      ],
+      "note": "西语频道，覆盖 Gun Girls 深度评测",
+      "discovered_via": "Gun Girls 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@TargoGaming",
+      "channel_id": "UCgRlO8C_J3REm_BlE9gcGBg",
+      "name": "TargoGaming",
+      "url": "https://www.youtube.com/@TargoGaming",
+      "weight": 2,
+      "tags": [
+        "survival",
+        "mobile"
+      ],
+      "note": "覆盖 Survival Nation 等生存游戏",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@JuniorForGaming",
+      "channel_id": "UCrR_vj0ZvXyTrHvXghkUY-w",
+      "name": "JuniorForGaming",
+      "url": "https://www.youtube.com/@JuniorForGaming",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "4X"
+      ],
+      "note": "覆盖 Titan Rush 等 4X 策略游戏",
+      "discovered_via": "Titan Rush 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@musthavegames_androidgameplay",
+      "channel_id": "UCDIREjJsnYFFAQnl-BNqUVA",
+      "name": "Must Have Games: Global Android Archive",
+      "url": "https://www.youtube.com/@musthavegames_androidgameplay",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "4X",
+        "android-archive"
+      ],
+      "note": "覆盖 Titan Rush、Primal Arena 等策略游戏",
+      "discovered_via": "Titan Rush / Primal Arena 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@AndromalicPlay-xj3zb",
+      "channel_id": "UC6oRub4TgKPcx1Sn7A3HOfQ",
+      "name": "AndromalicPlay1337",
+      "url": "https://www.youtube.com/@AndromalicPlay-xj3zb",
+      "weight": 2,
+      "tags": [
+        "strategy",
+        "multi-platform"
+      ],
+      "note": "覆盖 Last Fortress 等，休闲/家庭向偏多",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@TaiDinoTV",
+      "channel_id": "UC1acS1ETWVVRXBVQ25BNzVG",
+      "name": "Tài Dino TV",
+      "url": "https://www.youtube.com/@TaiDinoTV",
+      "weight": 1,
+      "tags": [
+        "SLG",
+        "strategy"
+      ],
+      "note": "越南语频道，覆盖 Sengoku Bushido SLG",
+      "discovered_via": "Sengoku Bushido 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@KeepGamingUp",
+      "channel_id": "UCmuNtvPiHYdxRjGPoBWKnXA",
+      "name": "Keep Gaming Up",
+      "url": "https://www.youtube.com/@KeepGamingUp",
+      "weight": 0,
+      "tags": [
+        "general"
+      ],
+      "note": "39 订阅，9 视频，体量太小，替补观察",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@PartyElite",
+      "channel_id": "UCg3BiSs8eBE9hA9EWYTgtAg",
+      "name": "PartyElite",
+      "url": "https://www.youtube.com/@PartyElite",
+      "weight": 0,
+      "tags": [
+        "strategy",
+        "4X",
+        "RTS"
+      ],
+      "note": "策略游戏推荐高质量，但主要是 PC/Steam，手机内容极少，替补保留",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@GamingMobile",
+      "channel_id": "UCibdKdOn5C-za6_tMYeVHKQ",
+      "name": "Gaming Mobile",
+      "url": "https://www.youtube.com/@GamingMobile",
+      "weight": 2,
+      "tags": [
+        "survival",
+        "mobile"
+      ],
+      "note": "覆盖 CrisisX、RELLION 等游戏",
+      "discovered_via": "CrisisX / RELLION 交叉引用",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    },
+    {
+      "id": "@ALMIGHTYBEAST56U",
+      "channel_id": "UCnQUHYNA93cLrWd_TY6AqVQ",
+      "name": "ALMIGHTY BEAST",
+      "url": "https://www.youtube.com/@ALMIGHTYBEAST56U",
+      "weight": 3,
+      "tags": [
+        "SLG",
+        "strategy",
+        "walkthrough"
+      ],
+      "note": "覆盖 Last War SLG、Fortune Hunter 等策略游戏 walkthrough",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 1
+    },
+    {
+      "id": "@NinjaBanjaGG",
+      "channel_id": "UCTb5kHRqeiyqX8fvzvm4Rjw",
+      "name": "NinjaBanjaGG",
+      "url": "https://www.youtube.com/@NinjaBanjaGG",
+      "weight": 3,
+      "tags": [
+        "strategy",
+        "RPG",
+        "walkthrough"
+      ],
+      "note": "覆盖 Fate War 等手游策略 RPG walkthrough",
+      "discovered_via": "expansion search",
+      "discovered_date": "2026-05-18",
+      "relevant_videos_7d": 0
+    }
+  ]
+}

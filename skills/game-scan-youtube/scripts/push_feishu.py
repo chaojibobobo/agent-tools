@@ -24,6 +24,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from decision_card import (
     build_compact_post,
     build_interactive_card,
+    validate_4x_profile,
     visible_card_text,
 )
 
@@ -80,7 +81,12 @@ def get_token() -> str:
 def parse_report(report_path: Path) -> dict:
     """Parse a daily markdown report into structured data."""
     text = report_path.read_text()
-    result = {"is_quiet": False, "games": [], "takeaways": []}
+    result = {
+        "is_quiet": False,
+        "scan_profile": "",
+        "games": [],
+        "takeaways": [],
+    }
     section_kind = None
     current_game = None
     dash = r"(?:—|--)"
@@ -106,6 +112,13 @@ def parse_report(report_path: Path) -> dict:
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
+        if line.startswith(">") and "scan profile" in line.lower():
+            profile_line = re.sub(r"[*_`]", "", line.lstrip("> "))
+            _, separator, profile = profile_line.partition(":")
+            if separator:
+                result["scan_profile"] = profile.strip()
+            continue
+
         if line.startswith("## "):
             finish_game()
             heading = re.sub(r"\s*\([^)]*\)\s*$", "", line[3:]).strip().lower()
@@ -161,6 +174,10 @@ def parse_report(report_path: Path) -> dict:
                 "store_signal": "",
                 "cross_ref": "",
                 "priority": "",
+                "four_x_fit": "",
+                "four_x_evidence": "",
+                "package_id": "",
+                "aliases": [],
             }
             continue
 
@@ -205,10 +222,22 @@ def parse_report(report_path: Path) -> dict:
                     "store_signal": "store_signal",
                     "cross-ref": "cross_ref",
                     "priority": "priority",
+                    "4x_fit": "four_x_fit",
+                    "4x_evidence": "four_x_evidence",
+                    "package_id": "package_id",
+                    "package": "package_id",
+                    "aliases": "aliases",
                 }
                 mapped = field_map.get(key)
                 if mapped:
-                    current_game[mapped] = val
+                    if mapped == "aliases":
+                        current_game[mapped] = [
+                            item.strip()
+                            for item in re.split(r"[,，;；]", val)
+                            if item.strip()
+                        ]
+                    else:
+                        current_game[mapped] = val
 
         # Historical update summaries can be tables rather than H3 blocks.
         if section_kind == "update" and line.startswith("|"):
@@ -234,6 +263,10 @@ def parse_report(report_path: Path) -> dict:
                         "store_signal": "",
                         "cross_ref": cells[2],
                         "priority": "",
+                        "four_x_fit": "",
+                        "four_x_evidence": "",
+                        "package_id": "",
+                        "aliases": [],
                     }
                 )
 
@@ -591,7 +624,10 @@ def main():
     parser.add_argument("--date", required=True, help="Report date (YYYY-MM-DD)")
     parser.add_argument(
         "--dir",
-        default=os.environ.get("GAME_SCAN_WORK_DIR", "~/.game-scan-youtube/workspace"),
+        default=os.environ.get(
+            "GAME_SCAN_WORK_DIR",
+            "/Users/bobo/Codexspace/tools/game-scan-youtube",
+        ),
         help="Working directory",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print message without sending")
@@ -616,6 +652,10 @@ def main():
         sys.exit(1)
 
     parsed = parse_report(report_path)
+    validate_4x_profile(
+        parsed,
+        require_strict=report_date >= date(2026, 8, 6),
+    )
     channels_path = work_dir / "channels.json"
     summary = build_7day_summary(seen_games_path, report_date, channels_path)
     card_content = build_interactive_card(report_date, parsed, summary)

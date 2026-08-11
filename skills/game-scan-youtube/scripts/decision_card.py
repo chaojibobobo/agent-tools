@@ -5,6 +5,34 @@ from datetime import date
 from typing import Optional
 
 
+STRICT_4X_PROFILE = "4x-slg-strict-v1"
+
+
+def validate_4x_profile(parsed: dict, require_strict: bool = False) -> None:
+    profile = parsed.get("scan_profile", "").strip().lower()
+    if require_strict and profile != STRICT_4X_PROFILE:
+        raise ValueError(
+            "report must declare Scan Profile: 4X-SLG-STRICT-v1"
+        )
+    if profile != STRICT_4X_PROFILE:
+        return
+
+    invalid = []
+    for game in parsed.get("games", []):
+        fit = game.get("four_x_fit", "").strip().lower()
+        allowed = fit.startswith("core")
+        if game.get("is_watchlist"):
+            allowed = allowed or fit.startswith("pending")
+        if not allowed:
+            invalid.append(game.get("name", "<unnamed>"))
+
+    if invalid:
+        raise ValueError(
+            "strict 4X-SLG profile rejected non-core entries: "
+            + ", ".join(invalid)
+        )
+
+
 def _cross_ref_count(game: dict) -> int:
     match = re.search(r"\d+", game.get("cross_ref", ""))
     return int(match.group()) if match else 0
@@ -76,6 +104,7 @@ def _why(game: dict) -> str:
 
 
 def build_decision_model(parsed: dict) -> dict:
+    validate_4x_profile(parsed)
     games = parsed.get("games", [])
     confirmed = []
     for game in games:
@@ -276,20 +305,42 @@ def build_interactive_card(
             f"• {game['name']}｜"
             f"{_clip(game.get('hook') or game.get('status', ''), 26)}｜"
             f"[YouTube 原视频]({game['source_url']})"
-            for game in model["supplemental"][:4]
+            for game in model["supplemental"]
         )
         elements.append(_markdown(f"**➕ 补充**\n{supplemental}"))
 
     if model["trend"]:
         elements.append(_markdown(f"**趋势一句话**\n{model['trend']}"))
 
-    observations = []
     if model["watchlist"]:
-        observations.append(f"观察 {len(model['watchlist'])} 款")
+        watchlist_lines = []
+        for game in model["watchlist"]:
+            source_url = _youtube_source(game)
+            if not source_url:
+                raise ValueError(
+                    f"Watchlist game has no YouTube source: {game['name']}"
+                )
+            watchlist_lines.append(
+                f"◇ {game['name']}｜[YouTube 原视频]({source_url})"
+            )
+        elements.append(
+            _markdown(f"**⚪ 观察**\n" + "\n".join(watchlist_lines))
+        )
+
     if model["updates"]:
-        observations.append(f"更新 {len(model['updates'])} 款")
-    if observations:
-        elements.append(_markdown(f"**⚪ {' · '.join(observations)}**"))
+        update_lines = []
+        for game in model["updates"]:
+            source_url = _youtube_source(game)
+            if not source_url:
+                raise ValueError(
+                    f"Updated game has no YouTube source: {game['name']}"
+                )
+            update_lines.append(
+                f"↻ {game['name']}｜[YouTube 原视频]({source_url})"
+            )
+        elements.append(
+            _markdown(f"**↻ 更新**\n" + "\n".join(update_lines))
+        )
 
     header = {
         "template": "orange" if model["focus"] else "blue",
@@ -368,13 +419,19 @@ def build_compact_post(
     if model["trend"]:
         lines.append(_post_text(f"趋势｜{model['trend']}"))
 
-    observations = []
     if model["watchlist"]:
-        observations.append(f"观察 {len(model['watchlist'])} 款")
+        for index, game in enumerate(model["watchlist"]):
+            prefix = "⚪ 观察｜" if index == 0 else "◇ "
+            line = _post_text(f"{prefix}{game['name']}｜")
+            line.extend(_post_links(game))
+            lines.append(line)
+
     if model["updates"]:
-        observations.append(f"更新 {len(model['updates'])} 款")
-    if observations:
-        lines.append(_post_text(f"⚪ {' · '.join(observations)}"))
+        for index, game in enumerate(model["updates"]):
+            prefix = "↻ 更新｜" if index == 0 else "↻ "
+            line = _post_text(f"{prefix}{game['name']}｜")
+            line.extend(_post_links(game))
+            lines.append(line)
 
     return {
         "zh_cn": {

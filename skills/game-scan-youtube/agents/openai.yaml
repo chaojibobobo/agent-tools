@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Scan YouTube"
+  short_description: "Find early mobile 4X SLG signals with dynamic channels and six-country product monitoring."
+  default_prompt: "Use $game-scan-youtube in /Users/bobo/Codexspace/tools/game-scan-youtube to run the Channel Radar and independent MY/ID/PH/GB/TH/CA Product Radar. Verify country availability with localized store URLs, preserve structured candidate history, never use country coverage in channel weight, apply the strict 4X gate, and return every published game with its direct YouTube source."
+
+policy:
+  allow_implicit_invocation: true

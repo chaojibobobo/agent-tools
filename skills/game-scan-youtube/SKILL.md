@@ -1,22 +1,25 @@
 ---
 name: game-scan-youtube
 description: >
-  Daily YouTube monitor for new mobile game gameplay videos in a target genre. Scans weighted
-  channels via RSS feeds, finds videos uploaded in the last 24 hours, deduplicates against
-  previously seen games, and delivers only genuinely new content. Pushes reports to Feishu/Lark.
+  Incremental intelligence radar for new mobile 4X SLG gameplay and early product tests.
+  Maintains a dynamically weighted YouTube channel pool, falls back from RSS to channel pages,
+  independently monitors six early-launch countries, validates structured 4X evidence, and
+  delivers only genuinely new core-genre content with first-hand YouTube sources.
   Use this skill whenever the user mentions game scouting, competitive intelligence, mobile game
   monitoring, new game discovery, gameplay video tracking, 竞品监控, 游戏调研, or wants to find
   gameplay videos of competing titles. Also use for "搜一下新游戏", daily game check, or any
-  game market landscape query. This skill tracks channels and games across sessions to avoid
+  4X SLG market landscape query. This skill tracks channels and games across sessions to avoid
   showing the same content twice.
 metadata:
-  short-description: Scan and deduplicate fresh mobile-game gameplay videos
+  short-description: Scan fresh mobile 4X SLG gameplay with a strict genre gate
+argument-hint: "[today | YYYY-MM-DD]"
+user-invocable: true
 allowed-tools: Read, Write, Bash, WebSearch
 ---
 
-# Game Scan YouTube — 24h Incremental Monitor
+# Game Scan YouTube — Dual-Radar Incremental Monitor
 
-Daily scan for **new** gameplay videos uploaded in the last 24 hours. Never show the user something they've already seen.
+Scan for **new mobile 4X SLG** gameplay and early product-test signals since the last successful run. Never show the user something they've already seen, and never substitute broad strategy adjacency for core-genre fit.
 
 ## Phase 1 — Resolve Workspace and State
 
@@ -26,7 +29,9 @@ Resolve the working directory in this order:
 
 1. A path explicitly supplied by the user.
 2. `GAME_SCAN_WORK_DIR`.
-3. `~/.game-scan-youtube/workspace`.
+3. Fixed default: `/Users/bobo/Codexspace/tools/game-scan-youtube`.
+
+For this installation, always continue in that fixed default unless the user explicitly overrides it. During an interactive manual scan, the current agent executes the phases directly; do not start a nested `codex exec`. `run_scan.sh` is retained only for an explicitly requested non-interactive runner.
 
 Before the first scan, initialize it from the bundled snapshot:
 
@@ -40,18 +45,21 @@ Or initialize a custom directory:
 scripts/init_workspace.sh --dir /path/to/workspace
 ```
 
-The bootstrap contains the last known `channels.json`, `seen_games.json`, and 18 historical reports from 2026-05-12 through 2026-06-16. Never edit `references/history/`; copy forward into the mutable workspace.
+The bootstrap contains the last known channel/game snapshots, empty intelligence states, and 18 historical reports from 2026-05-12 through 2026-06-16. Never edit `references/history/`; copy forward into the mutable workspace.
 
 The user's request to run a scan authorizes report and state writes inside the resolved workspace. Before writing anywhere else, ask for approval and show the exact target.
 
 ### Persistent State
 
-Two files in the resolved working directory:
+Five state files in the resolved working directory:
 
-- **`channels.json`** — weighted channel list (seed + discovered), each entry has `relevant_videos_7d` (int) tracking relevant videos published in the last 7 days, updated each scan
-- **`seen_games.json`** — games already reported, with `first_seen`, `last_seen`, and `seen_videos`
+- **`channels.json`** — dynamic channel pool, `intelligence_score`, weight, evidence events, and separate `source_health`.
+- **`seen_games.json`** — published games with canonical name, aliases, package IDs, store URLs and seen videos.
+- **`candidate_history.json`** — all reviewed Core, Pending, Reject and Product Lead entities, including recheck conditions.
+- **`product_radar.json`** — independent six-country product observations and metrics.
+- **`scan_state.json`** — last successfully committed evidence window; collection alone never advances it.
 
-Both are read at start, written at end. They persist across sessions.
+All five are read at start and written only after validation. They persist across sessions.
 
 ### channels.json
 
@@ -68,14 +76,16 @@ Both are read at start, written at end. They persist across sessions.
       "weight": 10,
       "tags": ["genre-tag-1", "genre-tag-2"],
       "note": "why this channel is valuable",
-      "relevant_videos_7d": 0
+      "intelligence_score": 0,
+      "intelligence_events": [],
+      "source_health": {"status": "unknown"}
     }
   ],
   "discovered_channels": []
 }
 ```
 
-`channel_id` (UC... format) is required for RSS feed access. Find it via: `curl -s "https://m.youtube.com/@handle" | grep -oE 'channel_id=UC[^"&]+' | head -1 | cut -d= -f2`. If a channel returns 404, set `channel_id: null` and demote to weight 1.
+`channel_id` (UC... format) is required for RSS feed access. Find it via: `curl -s "https://m.youtube.com/@handle" | grep -oE 'channel_id=UC[^"&]+' | head -1 | cut -d= -f2`. A transient RSS/page failure updates `source_health` only and never changes intelligence weight. Set `channel_id: null` only after the identifier is independently verified as permanently invalid.
 
 ### seen_games.json
 
@@ -95,46 +105,103 @@ Both are read at start, written at end. They persist across sessions.
 }
 ```
 
-## Phase 2 — Collect Deterministic RSS Evidence
+## Phase 2 — Collect the Two Independent Radars
+
+### Channel Radar
 
 Run RSS collection in the parent shell before asking an agent to analyze content:
 
 ```bash
 python3 scripts/collect_rss.py \
   --channels "$GAME_SCAN_WORK_DIR/channels.json" \
-  --output "$GAME_SCAN_WORK_DIR/scan-input-YYYY-MM-DD.json"
+  --output "$GAME_SCAN_WORK_DIR/scan-input-YYYY-MM-DD.json" \
+  --state "$GAME_SCAN_WORK_DIR/scan_state.json" \
+  --channel-page-fallback
 ```
 
-This local JSON is the evidence boundary for the report. It records the exact 24-hour window, every successful or failed channel, and all feed entries in that window. A nested Codex or Claude process must not be expected to have network access.
+This local JSON records the gap-aware window, every source result, exact RSS entries, and relative-time page fallback entries. RSS uses bounded retries. A failed RSS source falls back to its `/videos` page; **channel-page fallback** is discovery evidence only and must keep `time_precision: relative` until a watch page provides an exact upload date.
 
-If every RSS channel fails, stop with `BLOCKED` and do not create a report, update state, push to Feishu, or write a done stamp. Partial failure is `CONCERNS`: preserve failed-channel state and mark the report as degraded.
+Coverage gates are machine-enforced after fallback. Effective overall or priority-channel coverage below 60% is `BLOCKED`; any fallback, RSS failure, backfill cap, or weak exact-time coverage is `degraded`; fully healthy RSS coverage is `complete`. `BLOCKED` means no report, state commit, push, receipt, or done stamp.
+
+### Product Radar
+
+Prepare the country-specific work manifest:
+
+```bash
+python3 scripts/prepare_product_radar.py \
+  --date YYYY-MM-DD \
+  --output "$GAME_SCAN_WORK_DIR/product-radar-input-YYYY-MM-DD.json"
+```
+
+Product Radar monitors exactly **MY / ID / PH / GB / TH / CA**: Malaysia, Indonesia, Philippines, United Kingdom, Thailand, and Canada. Open the manifest's region-qualified Google Play (`gl=COUNTRY`) and App Store (`country=COUNTRY`) endpoints first; generic web-search snippets cannot prove regional availability. For each country, record checked, failed, or not-run status and localized source URLs. Overall `complete` means all six checked, `degraded` means partial/failed coverage, and `not_run` means all six not run. Capture first listing, pre-registration to available, region expansion, removal, package/store ID, developer and observed time.
+
+Store-only results remain internal `Product Lead` entries. Reverse-search exact title, package ID and developer on YouTube. Only candidates with first-hand gameplay and a passing strict 4X gate may appear in the report. Product Radar has its own coverage and yield metrics; **target-country coverage never affects channel weight**.
 
 ## Phase 3 — Analyze, Deduplicate, and Draft
 
-Use `scan-input-YYYY-MM-DD.json`, `channels.json`, and `seen_games.json` as local inputs.
+Use both radar inputs and all persistent state files.
 
 ```
-1. Read scan-input-YYYY-MM-DD.json + channels.json + seen_games.json
-2. Broad daily analysis: sort local RSS candidates by upload time
-   - Apply a broad mobile-game candidate filter before the stricter genre ranking
+1. Read scan input + product-radar manifest + channels + seen games + candidate history + product radar + scan state
+2. Broad discovery pass: sort exact RSS candidates by upload time and keep page-relative candidates explicitly approximate
+   - Broad discovery may retain uncertain candidates temporarily, but nothing enters the report before the strict 4X gate
    - Duration check: read video page for candidates, prefer >= 10 min but keep high-signal 6-10 min first-look videos
    - On RSS error/empty recorded in the input: preserve channel state (no health penalty)
-3. Expand discovery beyond existing channels:
-   - Run targeted YouTube searches for fresh mobile gameplay queries
-   - Search recent Google Play / App Store launch and early-access signals
-   - Use cross-ref results to find new relevant channels
-4. For each new game found:
+3. Product Radar pass for MY / ID / PH / GB / TH / CA:
+   - Execute only searches supported by actual network evidence
+   - Use exact title / package ID / developer to reverse-search YouTube
+   - Store source-less candidates as Product Lead; never publish them
+   - Use verified videos to discover candidate channels
+4. For each candidate game:
+   - Score the four mandatory evidence pillars and assign Core / Pending / Reject
    - YouTube cross-ref (web search): find coverage on other channels
    - Google Play cross-ref: extract downloads, rating, last update
    - Channel discovery: evaluate new channels for discovered_channels
-5. Dedup: filter out games/videos already in seen_games.json
+5. Entity dedup: package ID first, then store URL, then canonical name + aliases
    - New game → full entry with all details
    - Known game → only include video URLs not in seen_videos
-6. Generate markdown report (newest upload first)
-7. Do not update state or publish yet
+6. Generate `candidate-ledger-YYYY-MM-DD.json` with every Core, Pending, Reject and Product Lead, structured pillars, videos, aliases, package IDs, country observations and recheck conditions
+7. Generate a `4X-SLG-STRICT-v1` markdown report from publishable ledger entries
+8. Do not update state or publish yet
 ```
 
-Expansion search is optional in headless automation because the nested agent may have no network. When it is unavailable, clearly label the run RSS-only rather than fabricating search coverage.
+When country/product search is unavailable, record failed/not-run per country. Never fabricate complete Product Radar coverage.
+
+### Candidate Ledger Gate
+
+The ledger is the machine-readable judgment truth for new runs. `Core` must structurally prove Base / City and World Map / Territory plus Resource Economy or Army / Alliance War. `Pending` names the missing pillar. `Reject` and `Product Lead` remain local. Country observations must store `region_verified: true` and a `region_source_url` localized to the same country; otherwise validation fails. Every published report entry must map to one ledger entity and use a YouTube URL stored on that same entity.
+
+### Strict 4X SLG Genre Gate
+
+The publishing profile is `4X-SLG-STRICT-v1`. Broad discovery is allowed; broad publication is not.
+
+Score gameplay evidence against four pillars:
+
+1. **Base / City** — a persistent player settlement, city, kingdom, shelter, or equivalent that is built and developed over time.
+2. **World Map / Territory** — a persistent strategic map with exploration, territorial expansion, occupation, marches, nodes, cities, or other map control.
+3. **Resource Economy** — production, gathering, logistics, technology, construction queues, population, or resource conversion that supports expansion.
+4. **Army / Alliance War** — controllable armies or marches, conquest, alliance coordination, territory war, or persistent PvP conflict.
+
+Classification:
+
+- **Core** — both `Base / City` and `World Map / Territory` are directly evidenced, plus at least one of the other two pillars. This is the only status allowed in `New Games` and `New Videos for Known Games`.
+- **Pending** — there is concrete evidence that the product is probably a persistent 4X SLG, but the available gameplay does not yet prove one required pillar. It may appear only in `Watchlist`, with the missing pillar named.
+- **Reject** — either mandatory anchor is absent, fewer than three pillars are evidenced, or the product's primary loop is a different genre. Keep it only in the local exclusion reasoning; never send it as a discovery, supplement, watchlist item, or known-game update.
+
+Hard counterexamples:
+
+- Auto-Battler, Merge battler, deck battler, three-minute lane battler, match-based RTS, or arena PvP without a persistent city and world territory.
+- Roguelike TD, hero defense, single-screen tower defense, crowd runner, or action survival even when upgrades or a decorative base exist.
+- Idle RPG, hero collector, MMORPG, simulation/tycoon, settlement builder without territorial conflict, or base defense without a strategic world map.
+- A Strategy/MMORTS store label is not genre evidence. `kingdom`, `empire`, `war`, `civilization`, `zombie`, package size, video duration, channel count, and high views are discovery clues only.
+
+Evidence strength and genre fit are separate axes. Multiple channels and long videos can increase confidence in a `Core` classification; they can never promote `Pending` or `Reject` into `Core`.
+
+Priority rules:
+
+- `Focus` — Core 4/4, with two independent gameplay sources or one official/source-complete video that visibly demonstrates the persistent loop.
+- `Track` — Core 3/4 or Core 4/4 with limited launch evidence.
+- `Watchlist` — Pending only. Name the missing pillar and do not count it as a new game.
 
 ## Phase 4 — Validate, Commit, and Publish
 
@@ -147,13 +214,14 @@ report-only → machine validation → Feishu dry-run → state commit → real 
 Commands:
 
 ```bash
-python3 scripts/validate_run.py --date YYYY-MM-DD --dir "$GAME_SCAN_WORK_DIR"
+python3 scripts/validate_run.py --date YYYY-MM-DD --dir "$GAME_SCAN_WORK_DIR" --require-intelligence-ledger
 python3 scripts/push_feishu.py --date YYYY-MM-DD --dir "$GAME_SCAN_WORK_DIR" --dry-run
 python3 scripts/commit_state.py --date YYYY-MM-DD --dir "$GAME_SCAN_WORK_DIR"
 python3 scripts/push_feishu.py --date YYYY-MM-DD --dir "$GAME_SCAN_WORK_DIR"
 python3 scripts/validate_run.py \
   --date YYYY-MM-DD \
   --dir "$GAME_SCAN_WORK_DIR" \
+  --require-intelligence-ledger \
   --require-push-receipt
 ```
 
@@ -169,11 +237,11 @@ Only the final command returning `COMPLETE` permits `.run-stamps/YYYY-MM-DD.done
   - This is a genuinely new find — full entry with all details
 - **Video URL already in seen_games?** Skip it entirely
 
-## Scan Strategy (24h window)
+## Scan Strategy (gap-aware window)
 
-Only look for videos uploaded **today or yesterday** for the daily report. Use a 7-day window only for channel health, cross-reference strength, and quiet-day summaries.
+Start at `scan_state.json.last_successful_scan_end`. If no committed cursor exists, use 24 hours. Cap automatic backfill at 72 hours and mark older gaps `backfill_limited: true`; never call them complete historical coverage. Use a 7-day view only for summaries and a 30/90-day view for channel intelligence.
 
-Daily coverage goal: maximize useful recall first, then rank by relevance. Missing a new mobile strategy game is worse than listing a borderline candidate with a clear note.
+Daily coverage goal: maximize recall during discovery, then maximize precision at publication. A Quiet Day is better than sending a non-4X game. Missing a broad strategy-adjacent title is acceptable; admitting one as 4X SLG is a classification failure.
 
 Before doing network work, check whether `WORK_DIR/YYYY-MM-DD.md` already exists and is non-empty for the requested date. If it exists and the user did not explicitly ask to rerun, summarize that the daily report already exists — but still ensure the Feishu push has been attempted (the cron fallback handles push retries via `--force-push`).
 
@@ -194,11 +262,11 @@ Each RSS feed returns the latest 15 videos as XML with:
 
 **Filter pipeline:**
 1. Parse XML, extract all `<entry>` elements
-2. Keep only entries with `<published>` within last 24h
-3. Keep broad mobile-game candidates first: Android, iOS, mobile, gameplay, walkthrough, first look, new game, early access, CBT, soft launch, global launch, Google Play, App Store
-4. Rank higher when title/description includes strategy, SLG, 4X, RTS, survival, base-building, alliance, PvP, war, kingdom, empire, zombie, post-apocalyptic, tower defense, city builder, civilization, troops, heroes + base/map language
-5. Exclude only obvious non-target content: PC/console-only, shorts, trailers without gameplay, racing, sports, dress-up, match-3, pure idle, pure anime RPG/gacha with no strategy/base layer
-6. For remaining videos, check duration via video page read. Prefer >= 10 min. Keep 6-10 min videos if the title says first look/new game/CBT/soft launch or the game has strong store/cross-channel signal.
+2. Keep only entries with `<published>` inside the resolved gap-aware evidence window
+3. Keep broad mobile-game candidates temporarily: Android, iOS, mobile, gameplay, walkthrough, first look, new game, early access, CBT, soft launch, global launch, Google Play, App Store
+4. Search title/description for combinations of persistent city/base, world map/territory, resource economy, armies/marches, alliance war, occupation, gathering, technology, and expansion
+5. Apply the four-pillar gate to gameplay and detailed source descriptions; keywords alone never pass the gate
+6. Reject genre counterexamples before duration/cross-channel ranking. Then check duration and source strength only for Core or narrowly Pending candidates.
 
 **Adding a new channel:** When a new channel is added to channels.json, find its `channel_id` by reading `https://m.youtube.com/@handle` and extracting the UC... ID from page source (`grep -oP 'channel_id=UC[^"&]+'`).
 
@@ -210,7 +278,7 @@ After the daily scan completes, optionally supplement the channel list:
 2. If below 50, attempt to add up to **5-10 new high-quality candidate channels** using:
    - User-provided channel names/handles/URLs
    - Cross-ref searches on games found during today's scan
-   - Genre-specific YouTube channel searches (SLG, RTS, 4X, survival strategy)
+   - Genre-specific YouTube channel searches (mobile 4X SLG, world-map SLG, alliance-war strategy)
    - Top-list / compilation video creator extraction
 3. Each new channel must have a **verified `channel_id`** with working RSS feed
 4. New channels start at weight 2-3 in `discovered_channels`
@@ -224,13 +292,12 @@ After RSS scanning, use the available web search tool for targeted queries that 
 
 Minimum daily query set:
 ```
-site:youtube.com/watch mobile strategy game gameplay android
-site:youtube.com/watch new mobile game gameplay android
-site:youtube.com/watch SLG gameplay android
-site:youtube.com/watch 4X strategy mobile gameplay
-site:youtube.com/watch base building survival strategy android gameplay
-site:youtube.com/watch soft launch mobile strategy gameplay
-site:youtube.com/watch CBT mobile strategy gameplay
+site:youtube.com/watch mobile 4X SLG gameplay android world map
+site:youtube.com/watch new SLG gameplay android alliance territory
+site:youtube.com/watch 4X strategy mobile gameplay city world map
+site:youtube.com/watch base building world map alliance war mobile gameplay
+site:youtube.com/watch soft launch 4X SLG mobile gameplay
+site:youtube.com/watch CBT SLG mobile world map gameplay
 ```
 
 For each credible result:
@@ -239,16 +306,9 @@ For each credible result:
 - If the channel repeatedly appears with target-genre coverage, resolve its `channel_id` and add it to `discovered_channels`.
 - Do not let search expansion replace RSS. RSS is the stable backbone; search expansion is the recall booster.
 
-### Store Expansion: launch signals
+### Product Radar: six-country launch signals
 
-For candidate games and quiet days, search store signals:
-```
-site:play.google.com/store/apps/details strategy mobile game early access
-site:play.google.com/store/apps/details 4X strategy android
-site:apps.apple.com strategy game soft launch
-```
-
-Use store results to enrich entries and to discover exact game names that can be searched back on YouTube.
+Use `product-radar-input-YYYY-MM-DD.json` to monitor MY / ID / PH / GB / TH / CA separately. Start with its localized store endpoints, use the country-specific web queries only as discovery fallback, then record per-country status and source URLs in `candidate-ledger-YYYY-MM-DD.json`. Use store results to identify exact title, package ID and developer, then reverse-search those identifiers on YouTube. Store-only findings remain `Product Lead` and cannot enter the user-facing report.
 
 ### Fallback 1: web search (cross-reference)
 
@@ -258,9 +318,9 @@ When RSS finds a potential new game, use web search to verify coverage on other 
 ```
 This also serves as channel discovery — if a new channel appears in results covering multiple games in your genre, add it to `discovered_channels`.
 
-### Fallback 2: Channel page read (duration check)
+### Fallback 2: Channel page read
 
-RSS feeds don't include video duration. For candidate videos that pass the genre keyword filter, read the individual video page to check duration ≥ 10 min:
+The collector automatically uses failed-channel `/videos` pages as a recall fallback. These entries have relative time only. For candidates that pass broad discovery, read the individual watch page to obtain exact upload date, duration and description:
 - Open the mobile YouTube URL with the available browser/web tool
 - Or curl + grep for `"lengthSeconds":"..."` in page source
 
@@ -275,16 +335,16 @@ RSS feeds don't include video duration. For candidate videos that pass the genre
   - In both cases, merge results from both passes into a single report. Do not produce two reports.
 - No pacing needed between RSS requests (no rate limiting)
 - If web search is used heavily, cap expansion queries first, then cross-ref only the strongest candidates to avoid spending the budget on weak leads.
-- If RSS returns empty/errors for a channel: skip it, no health penalty
-- Update `relevant_videos_7d` for each channel after scanning
+- If RSS returns empty/errors for a channel: try the channel-page fallback and update `source_health`; do not change intelligence weight
+- Append structured Core / Pending / Reject evidence events, then recompute the 30-day intelligence score; preserve 90 days of raw events
 
-### Google Play signal
+### Store signal enrichment
 
-For new games, extract store metrics:
+For candidates discovered by either radar, extract store metrics:
 ```
 "[game name]" site:play.google.com
 ```
-Extract: download count, rating, last update date. A sudden spike in downloads = scaling test signal.
+Extract: country, availability, download count, rating, last update date and package ID. Treat a sudden download spike as a scaling-test clue, not proof of 4X fit and not a channel-weight input.
 
 ### Channel discovery
 
@@ -292,31 +352,27 @@ If a cross-ref search reveals a new channel covering multiple games in your targ
 1. Check if it's already in channels.json
 2. Find its `channel_id` via `curl -s https://m.youtube.com/@handle | grep -oE 'channel_id=UC[^"&]+' | head -1 | cut -d= -f2`
 3. Evaluate: how many relevant videos in its RSS feed? Consistent title pattern?
-4. Add to `discovered_channels` with `channel_id`, `relevant_videos_7d: 0` and appropriate initial weight
+4. Add to `discovered_channels` with verified `channel_id`, empty intelligence history, `source_health: unknown`, and probation weight 2-3
 
-## Weight System
+## Channel Intelligence and Weight System
+
+Dynamic channel maintenance remains the primary discovery mechanism. The score is derived only from the channel's target-intelligence performance:
+
+- **40% strict 4X yield** — `(Core + 0.5 × Pending) / reviewed` over the recent window.
+- **25% early discovery** — share of valid candidates where the channel supplied the earliest exact source.
+- **20% unique discovery** — share of valid candidates supplied only by this channel in the run.
+- **15% evidence quality** — average 1–5 quality of first-hand gameplay evidence.
+
+`intelligence_score` and `source_health` are separate. RSS/page availability updates `source_health` only. Country/store observations are not read by the scoring function. Fewer than three reviewed events remains probation and cannot auto-promote above weight 4. User-confirmed seed channels retain manual weight 10; other channels derive weights 1–9 from score bands.
 
 | Weight | Meaning | Scan frequency |
 |--------|---------|---------------|
-| 9-10 | Seed channels (user-confirmed) | Every run, first batch |
-| 7-8 | High-quality, frequent content | Every run |
-| 5-6 | Regular content | Every run |
-| 3-4 | Occasional | Every run (light) |
-| 1-2 | Needs validation | Quiet days + full audits only |
+| 10 | User-confirmed seed | Every run, first batch |
+| 8-9 | Proven early strict-4X sources | Every run |
+| 6-7 | Repeated useful Core/Pending evidence | Every run |
+| 3-5 | Broad but occasionally useful / probation | Every run or rotation |
+| 1-2 | Sustained low target yield | Quiet days + full audits only |
 | 0 | Bench/substitute | Quiet days + full audits only |
-
-Weight adjustments per run:
-- Channel has ≥1 new relevant video this run → weight +1 (max 8)
-- User explicitly approves a channel → promote to seed, weight 10
-
-`relevant_videos_7d` is recalculated each scan: count how many of the channel's videos found in this run fall within the rolling 7-day window (not cumulative — reset and recount every run). This means a channel that was active last week but silent this week will correctly decay to 0.
-
-Channel health (based on `relevant_videos_7d`, updated each run):
-- `relevant_videos_7d` ≥ 5 → healthy, maintain weight
-- `relevant_videos_7d` 1-4 → watching
-- `relevant_videos_7d` = 0 AND weight > 5 → demote -1 (min 1), flag for user review
-
-**Important:** channels skipped by batch processing (429/empty) do NOT update `relevant_videos_7d` and do NOT participate in health calculations. Only channels whose pages were actually read get updated.
 
 If repeated `429`, `403`, or upstream `5xx` responses prevent verification, stop retrying the same source in the current run. Mark the report as degraded, preserve the previous state for unverified channels, and present recharge, source change, lower frequency, or pause as explicit next options. A started cron job is not evidence of a completed scan.
 
@@ -325,7 +381,9 @@ If repeated `429`, `403`, or upstream `5xx` responses prevent verification, stop
 Save to `WORK_DIR/YYYY-MM-DD.md`.
 
 ```markdown
-# Game Scout — YYYY-MM-DD（24h Update）
+# Game Scout — YYYY-MM-DD（Incremental Update）
+
+> **Scan Profile:** 4X-SLG-STRICT-v1
 
 ## New Games
 
@@ -334,6 +392,10 @@ Save to `WORK_DIR/YYYY-MM-DD.md`.
 
 **Status:** Early Access / CBT / Soft Launch / Just Launched
 **Priority:** Focus / Track
+**4X Fit:** Core — Base / City + World Map / Territory + [Resource Economy and/or Army / Alliance War]
+**4X Evidence:** Base/City=[evidence]; World Map/Territory=[evidence]; Resource Economy=[evidence or missing]; Army/Alliance War=[evidence or missing]
+**Package ID:** ...
+**Aliases:** ...
 **Developer:** ...
 **Platform:** Android / iOS / Both
 **What you'll see:** [2-3 sentences gameplay description]
@@ -347,6 +409,7 @@ Save to `WORK_DIR/YYYY-MM-DD.md`.
 
 ### [Game Name] — new video
 - [Video Title](youtube-url) — Channel · Duration · Views · uploaded HH:MM
+[**4X Fit:** Core and the update-specific 4X evidence]
 [Brief note on what's new in this video compared to previous ones]
 
 ---
@@ -365,13 +428,15 @@ Save to `WORK_DIR/YYYY-MM-DD.md`.
 
 ### Empty day handling
 
-If no new videos found in 24h, write a Quiet Day report with a **7-day summary** section. The quiet day push becomes an opportunity to deliver a weekly retrospective — this keeps the daily push valuable even when there's nothing new.
+If no new videos are found in the resolved evidence window, write a Quiet Day report with a **7-day summary** section. The quiet day push becomes an opportunity to deliver a weekly retrospective — this keeps the daily push valuable even when there's nothing new.
 
 ```markdown
-# Game Scout — YYYY-MM-DD（24h Update）
+# Game Scout — YYYY-MM-DD（Incremental Update）
+
+> **Scan Profile:** 4X-SLG-STRICT-v1
 
 ## Quiet Day
-No new gameplay videos found in the last 24 hours.
+No new gameplay videos found in the resolved evidence window.
 
 ### 7-Day Summary (MM-DD ~ MM-DD)
 
@@ -410,11 +475,11 @@ The local Markdown report preserves full evidence. Feishu uses **Decision Card v
 
 1. **价值结论** — answer whether today deserves attention in no more than 2 short sentences / 80 Chinese characters.
 2. **必看** — expand 1 high-signal game by default; expand at most 2 only when both are explicitly `Priority: Focus`.
-3. **为什么看** — show one strongest evidence line: multi-channel coverage, long-form gameplay, test/launch status, or store growth.
-4. **核心机制** — compress gameplay into at most 3 mechanism nodes joined by `→`.
+3. **为什么看** — lead with the 4X evidence chain; use multi-channel coverage, duration, or store growth only as secondary confidence.
+4. **核心机制** — compress the persistent 4X loop into at most 4 nodes joined by `→`.
 5. **补充** — one line per weaker finding, with no repeated developer/platform/store field list.
 6. **趋势一句话** — keep one cross-game judgment only.
-7. **观察与更新** — show counts, or at most 2 names when necessary; never inflate the confirmed-new count.
+7. **观察与更新** — list every included name with its direct YouTube source. Never replace entries with counts and never include Reject items.
 
 First-hand source links are a publishing gate:
 
@@ -437,14 +502,16 @@ Do not give every game equal space. Do not copy the full `What you'll see`, all 
 
 ## Sorting
 
-- **Primary sort**: video upload time within 24h, newest first
-- Include upload time (HH:MM) when available
+- **Primary sort**: exact video upload time inside the resolved evidence window, newest first
+- Include upload time (HH:MM) when exact; keep channel-page relative times clearly marked and below exact-time evidence
 
 ## What counts
 
-Include: CBT/soft launch/early access/just launched, actual gameplay footage, survival-strategy hybrids, RTS-strategy hybrids, 4X, SLG, war/empire/kingdom/civilization builders, base building, map, alliance, resource mgmt, troops, PvP. Size > 500MB = more likely real game in your genre.
+Include only `Core` mobile 4X SLG: persistent base/city development and persistent world-map/territory play must both be visible or independently evidenced, with resource economy and/or army/alliance war supplying at least a third pillar.
 
-Exclude: established titles unless major update, pure RPG/survival without strategy layer, PC-only, trailers without gameplay.
+Watch only `Pending` candidates that plausibly belong to the same core genre but lack one named piece of evidence. Do not use Watchlist as a home for nearby genres.
+
+Exclude all `Reject` candidates, established titles without a major core-system update, PC-only games, and trailers without gameplay. Theme, store category, package size, popularity, duration, or multiple uploads never substitute for the 4X gate.
 
 **Duration filter:** prefer videos >= 10 minutes. Do not automatically discard 6-10 minute videos when they are first-look, CBT, early-access, soft-launch, or cross-channel signals. Skip shorts and thin clips.
 
@@ -495,12 +562,18 @@ Do not infer that the historical schedule is still active. Verify the current au
 ## Key Principles
 
 - **Incremental only**: never show previously seen content. seen_games.json is the truth.
-- **24h window**: focus on what's new RIGHT NOW, not what was new last week.
-- **RSS-first**: fetch RSS feeds for structured video data, web search for cross-ref only.
+- **4X precision first**: publication requires `4X-SLG-STRICT-v1`; generic strategy adjacency stays out.
+- **Two mandatory anchors**: no persistent Base / City plus World Map / Territory means no confirmed entry.
+- **Gap-aware incremental window**: continue from the last successful committed cursor, capped at 72 hours.
+- **Channel Radar first**: dynamic weighted sources remain the primary video-discovery mechanism.
+- **Product Radar independent**: MY / ID / PH / GB / TH / CA coverage never changes channel weight.
+- **RSS exact, page fallback approximate**: relative page time never impersonates an exact upload timestamp.
+- **Structured judgment memory**: candidate ledger and Reject history prevent repeated false positives.
 - **Batch with pacing**: 5 channels per batch. Cross-reference search may 429 — space queries out and stop repeated failed retries.
 - **Automated push**: script auto-reads files and pushes, `--dry-run` for testing.
 - **Cross-reference**: same game on 2+ channels in same day = hot new test.
 - **First-hand evidence travels with the finding**: every confirmed new game keeps a direct YouTube source link in both the card and fallback.
+- **No count-only sections**: every watchlist and known-game update renders at least `game name + direct YouTube source`; aggregate counts may summarize but never replace the entries.
 - **Honest**: quiet day = quiet day. Don't pad.
 - **Judgment first**: answer “what matters today” before listing discoveries.
 - **Signal weighted**: expand strong findings, compress weak ones, and never let a watchlist item inflate the new-game count.

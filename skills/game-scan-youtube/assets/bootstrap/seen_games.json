@@ -1,0 +1,1385 @@
+{
+  "last_updated": "2026-06-16",
+  "games": {
+    "Last Beacon: Survival": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-17",
+      "developer": "Immersive Games HK",
+      "status": "Early Access",
+      "tags": [
+        "survival",
+        "SLG",
+        "base-building",
+        "ocean"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=z635BmfIcS8",
+        "https://www.youtube.com/watch?v=pzuAnIZ6ETc",
+        "https://www.youtube.com/watch?v=OxWu88bJ7Is",
+        "https://www.youtube.com/watch?v=N0KYF9IFL8c"
+      ]
+    },
+    "Kingdom of Desert": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-18",
+      "developer": "YG Tech",
+      "status": "Launched",
+      "tags": [
+        "SLG",
+        "base-building",
+        "tower-defense",
+        "desert"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=W-nAboF_yjU",
+        "https://www.youtube.com/watch?v=I-aHLLEsp-A",
+        "https://www.youtube.com/watch?v=1jDOWSQfIYE",
+        "https://www.youtube.com/watch?v=Hw6imE7h7t8",
+        "https://www.youtube.com/watch?v=LjQ0gg_bwjk",
+        "https://www.youtube.com/watch?v=Pm8bJEcF9nQ"
+      ]
+    },
+    "Hordes: Brink of Survival": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "YOUR GAMES LIMITED",
+      "status": "Early Access",
+      "tags": [
+        "RTS",
+        "zombie",
+        "survival",
+        "card-deck"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=zypFtqAzRTY",
+        "https://www.youtube.com/watch?v=Yg4Z5BN07Z0",
+        "https://www.youtube.com/watch?v=MQzGDNdnip8"
+      ]
+    },
+    "War Vow": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "STARFOX GAME",
+      "status": "Early Access",
+      "tags": [
+        "SLG",
+        "WWII",
+        "military",
+        "RTS"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=i1ZPRp6380E",
+        "https://www.youtube.com/watch?v=N2L_tn10M70"
+      ]
+    },
+    "Lost Horizon": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "GTArcade",
+      "status": "Early Access",
+      "tags": [
+        "RTS",
+        "sci-fi",
+        "base-building",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=EbdePsIsep4"
+      ]
+    },
+    "Resident Evil: Survival Unit": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "Aniplex + JOYCITY + Capcom",
+      "status": "Launched",
+      "tags": [
+        "IP",
+        "SLG",
+        "horror",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=B07sIiKB9WA"
+      ]
+    },
+    "Titan Rush": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "Unknown",
+      "status": "Early Access",
+      "tags": [
+        "4X",
+        "mecha",
+        "sci-fi",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=iLRdlh5dv-w"
+      ]
+    },
+    "Last Refuge: Survival": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "RATING GAME",
+      "status": "Early Access",
+      "tags": [
+        "4X",
+        "survival",
+        "base-building",
+        "TD"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=qccu3EAC5sw",
+        "https://www.youtube.com/watch?v=iSoEw1rmaAU",
+        "https://www.youtube.com/watch?v=lGp58-rONn4",
+        "https://www.youtube.com/watch?v=FUOO0GVEciQ",
+        "https://www.youtube.com/watch?v=nBmYkDPyPhk"
+      ]
+    },
+    "Mafia Mobile": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "4X",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=gkj0GZEz9HE"
+      ]
+    },
+    "BlitzLoot": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "Unknown",
+      "status": "Early Access",
+      "tags": [
+        "4X",
+        "strategy",
+        "action-shooter"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=5WjyFmUIxHE"
+      ]
+    },
+    "The War": {
+      "first_seen": "2026-05-12",
+      "last_seen": "2026-05-12",
+      "developer": "Unknown",
+      "status": "Early Access",
+      "tags": [
+        "SLG",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=cNpOBsmxDCc"
+      ]
+    },
+    "Order of Kings: True RTS Combat": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-05-13",
+      "developer": "DEQU",
+      "status": "Early Access",
+      "tags": [
+        "RTS",
+        "4X",
+        "sandbox",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=_ESFt73dVv8",
+        "https://www.youtube.com/watch?v=Cjf-s_EvhFQ",
+        "https://www.youtube.com/watch?v=OS8LpsM7HM0",
+        "https://www.youtube.com/watch?v=Tx9zVLrabyI",
+        "https://www.youtube.com/watch?v=z4hv_wSG32Y"
+      ]
+    },
+    "Kingdom Fall": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-06-08",
+      "developer": "Linkify Limited",
+      "status": "Early Access",
+      "tags": [
+        "survival",
+        "zombie",
+        "base-building",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=U0L218LOcWc",
+        "https://www.youtube.com/watch?v=st5K9CPeWeA",
+        "https://www.youtube.com/watch?v=yzX_hdgRqqs",
+        "https://www.youtube.com/watch?v=oRNV4xz2tg8",
+        "https://www.youtube.com/watch?v=AQqkRmGNeCU",
+        "https://www.youtube.com/watch?v=HchO3WfGbHM",
+        "https://www.youtube.com/watch?v=_102OvGcvNk",
+        "https://www.youtube.com/watch?v=rcchSy0AueA",
+        "https://www.youtube.com/watch?v=2pUn3XSL-a8",
+        "https://www.youtube.com/watch?v=LxfF_ULXJ9c"
+      ]
+    },
+    "Last Fiefdom": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-06-08",
+      "developer": "Puzala",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "medieval",
+        "base-building"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=hlNc1D0klvA",
+        "https://www.youtube.com/watch?v=HL_M5vpWOu4"
+      ]
+    },
+    "Inkvasion": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-05-13",
+      "developer": "ChillyRoom",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "ink-art",
+        "RPG"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=Dcow6yEhooo",
+        "https://www.youtube.com/watch?v=C0TopLjFpsw"
+      ]
+    },
+    "Narco Empire": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-05-13",
+      "developer": "SparkHaven HK Limited",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "crime",
+        "base-building"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=KNPTUL9X9Zs",
+        "https://www.youtube.com/watch?v=oTCbWSlL-TI"
+      ]
+    },
+    "Frost Throne: Survival": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-05-13",
+      "developer": "Unknown",
+      "status": "Early Access",
+      "tags": [
+        "survival",
+        "strategy",
+        "frost"
+      ],
+      "seen_videos": []
+    },
+    "Aqua Survival": {
+      "first_seen": "2026-05-13",
+      "last_seen": "2026-05-13",
+      "developer": "icecatgames (韩国)",
+      "status": "Soft Launch",
+      "tags": [
+        "4X",
+        "ocean",
+        "survival",
+        "base-building",
+        "naval",
+        "alliance"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=4yc-y3IRM2c",
+        "https://www.youtube.com/watch?v=eO0A0NZWoJ8"
+      ]
+    },
+    "Plague War: Survival": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-05-21",
+      "developer": "Cloudwalker Ltd",
+      "status": "Early Access",
+      "tags": [
+        "survival",
+        "strategy",
+        "plague",
+        "SLG"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=PaX15c3OJRg",
+        "https://www.youtube.com/watch?v=IkXqYM85ZOI",
+        "https://www.youtube.com/watch?v=foxdDLC7u4w"
+      ]
+    },
+    "Throne of 3Q": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-05-14",
+      "developer": "Sohagame Inc",
+      "status": "Launched",
+      "tags": [
+        "SLG",
+        "three-kingdoms",
+        "strategy",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=c38N0b2INPM",
+        "https://www.youtube.com/watch?v=KiUtfnYABvI"
+      ]
+    },
+    "Duck Survival": {
+      "first_seen": "2026-06-01",
+      "last_seen": "2026-06-01",
+      "developer": "Joy Nice Games / JUXIN NETWORK LIMITED",
+      "status": "Launched",
+      "tags": [
+        "strategy",
+        "tower-defense",
+        "roguelike",
+        "zombie",
+        "base-building",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=rbkzczs-Af8",
+        "https://www.youtube.com/watch?v=IvwrcQbEmnw",
+        "https://www.youtube.com/watch?v=CReO1Oqbs0o",
+        "https://www.youtube.com/watch?v=vytaXUFy5io",
+        "https://www.youtube.com/watch?v=g3gHM-x4qcI",
+        "https://www.youtube.com/watch?v=DzWPgQrKQds"
+      ]
+    },
+    "Pixel Defenders: Merge TD": {
+      "first_seen": "2026-06-01",
+      "last_seen": "2026-06-03",
+      "developer": "Ondi Technology JSC",
+      "status": "Early Access",
+      "tags": [
+        "tower-defense",
+        "merge",
+        "strategy",
+        "pixel-art",
+        "idle"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=gYuXggQgEdA",
+        "https://www.youtube.com/watch?v=MdD2lVJ3iXE",
+        "https://www.youtube.com/watch?v=DhX2M8Yjw54",
+        "https://www.youtube.com/watch?v=TXfj8xa97c0"
+      ]
+    },
+    "RELLION: NPC Survival": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-06-01",
+      "developer": "DAERI SOFT Inc",
+      "status": "Launched",
+      "tags": [
+        "RPG",
+        "survival",
+        "gacha",
+        "NPC"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=-ptV7GzPUHw",
+        "https://www.youtube.com/watch?v=iV7HunbOvUk",
+        "https://www.youtube.com/watch?v=PEBhH9rME2U",
+        "https://www.youtube.com/watch?v=cRYSwekV9ww",
+        "https://www.youtube.com/watch?v=JadysWmXAls"
+      ]
+    },
+    "Survival 28 Days": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-05-14",
+      "developer": "RATING GAME",
+      "status": "Early Access",
+      "tags": [
+        "TD",
+        "4X",
+        "strategy",
+        "survival"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=diJ3P1hJlAs"
+      ]
+    },
+    "Last Cure: Survival": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-05-14",
+      "developer": "Eric Guillory",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "survival",
+        "hospital",
+        "base-building"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=uDWGX2qLHnI"
+      ]
+    },
+    "Dawn of Empire": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-05-16",
+      "developer": "Miracle games Sg Pte Ltd",
+      "status": "Early Access",
+      "tags": [
+        "SLG",
+        "strategy",
+        "empire",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=aOqd9vzP5Gk",
+        "https://www.youtube.com/watch?v=YUl0fxYXaSs"
+      ]
+    },
+    "EvoIsle: Merge & Conquer": {
+      "first_seen": "2026-05-14",
+      "last_seen": "2026-05-14",
+      "developer": "Gamepower Digital Limited",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "merge",
+        "conquer"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=aBZCwzMl-NU"
+      ]
+    },
+    "Heavenly Demon In The Three Kingdoms": {
+      "first_seen": "2026-05-15",
+      "last_seen": "2026-05-15",
+      "developer": "Volcanus Studio Co Ltd",
+      "status": "Launched",
+      "tags": [
+        "three-kingdoms",
+        "simulation",
+        "RPG",
+        "borderline-SLG"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=7P5QEfeZUlY",
+        "https://www.youtube.com/watch?v=Vk0MohPOX-c"
+      ]
+    },
+    "Go Go Springfield": {
+      "first_seen": "2026-05-17",
+      "last_seen": "2026-05-18",
+      "developer": "Onemt Sgp",
+      "status": "Launched",
+      "tags": [
+        "SLG",
+        "survival",
+        "strategy",
+        "base-building",
+        "apocalypse"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=XjwfYm9lznY",
+        "https://www.youtube.com/watch?v=Iw344PyMfnU",
+        "https://www.youtube.com/watch?v=lpY3362oDdA",
+        "https://www.youtube.com/watch?v=SMtx_EV1mi8",
+        "https://www.youtube.com/watch?v=u-ei1d386MA"
+      ]
+    },
+    "Gun Girls: Mist Survival": {
+      "first_seen": "2026-05-17",
+      "last_seen": "2026-05-18",
+      "developer": "Rating Game",
+      "status": "Early Access",
+      "tags": [
+        "SLG",
+        "zombie",
+        "tactical-shooter",
+        "survival"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=6QzcrixcQVA",
+        "https://www.youtube.com/watch?v=DKf09DXsxFE",
+        "https://www.youtube.com/watch?v=sm5dIi55zhs"
+      ]
+    },
+    "Primal Arena: Age Of Beasts": {
+      "first_seen": "2026-05-17",
+      "last_seen": "2026-05-17",
+      "developer": "Starryboo Ltd",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "squad-arena",
+        "borderline"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=t2MS6Qh1f4o"
+      ]
+    },
+    "Zombite Patrol": {
+      "first_seen": "2026-05-17",
+      "last_seen": "2026-05-17",
+      "developer": "Next Generation Games Ltd",
+      "status": "Alpha",
+      "tags": [
+        "zombie",
+        "survival",
+        "action",
+        "borderline"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=G6AZ1TRkAKg",
+        "https://www.youtube.com/watch?v=364MVexJXqc"
+      ]
+    },
+    "Lordrush": {
+      "first_seen": "2026-05-18",
+      "last_seen": "2026-05-18",
+      "developer": "Century Games Innovation Pte Ltd",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "medieval",
+        "fortress-building",
+        "tower-defense",
+        "war",
+        "CBT"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=wf1UObvi75k",
+        "https://www.youtube.com/watch?v=VxfZSrt7UrM",
+        "https://www.youtube.com/watch?v=I44rd72tqt0",
+        "https://www.youtube.com/watch?v=OwQDrgonOpw"
+      ]
+    },
+    "Final Frontline: Survival": {
+      "first_seen": "2026-05-18",
+      "last_seen": "2026-05-18",
+      "developer": "Techverse",
+      "status": "Launched",
+      "tags": [
+        "survival",
+        "zombie",
+        "strategy",
+        "base-defense"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=Ku_PK-F5NEA",
+        "https://www.youtube.com/watch?v=JTflv-W34E4"
+      ]
+    },
+    "Valorveil Clash": {
+      "first_seen": "2026-05-18",
+      "last_seen": "2026-05-18",
+      "developer": "Monch Inc",
+      "status": "Launched",
+      "tags": [
+        "tower-defense",
+        "strategy",
+        "hero",
+        "offline"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=7tWV-If1lIg"
+      ]
+    },
+    "Army Clash Commander": {
+      "first_seen": "2026-05-18",
+      "last_seen": "2026-05-18",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "strategy",
+        "tactics",
+        "formation",
+        "battle"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=g8veD_K4Sb4"
+      ]
+    },
+    "Wolf War: Last Survival": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=xexscYzGk3I"
+      ],
+      "developer": "SPECIAL (HONG KONG) CO., LIMITED",
+      "status": "Early Access",
+      "tags": [
+        "4X",
+        "MMORTS",
+        "survival",
+        "wolf",
+        "HK-shell"
+      ]
+    },
+    "Kingdom: Flames Of War": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=AYM8GUstSsc"
+      ],
+      "developer": "f8games",
+      "status": "Launched",
+      "tags": [
+        "MMORPG",
+        "strategy",
+        "official-launch"
+      ]
+    },
+    "Army Master": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=qdBrXoe3ApM"
+      ],
+      "developer": "Unknown",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "forge",
+        "multi-civilization"
+      ]
+    },
+    "Three Kingdoms: Rush": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=woFh9pde1Z8"
+      ],
+      "developer": "Tencent Mobile International Limited (老游戏 2016)",
+      "status": "Old Game (2016)",
+      "tags": [
+        "tower-defense",
+        "three-kingdoms",
+        "old-game"
+      ]
+    },
+    "Battle Waves: Mobile": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=SNPdsROqkHw"
+      ],
+      "developer": "Gabriel's Games",
+      "status": "OBT",
+      "tags": [
+        "strategy",
+        "OBT",
+        "multi-language"
+      ]
+    },
+    "Dead Zone: Shelter": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=cTkYUOtvRkg"
+      ],
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "zombie",
+        "survival",
+        "base-building"
+      ]
+    },
+    "Last Extract": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=FZcI9bZoZ3Q"
+      ],
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "zombie",
+        "survival",
+        "quarantine"
+      ]
+    },
+    "Mafiapoly": {
+      "first_seen": "2026-05-21",
+      "last_seen": "2026-05-21",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=iMK5F1RPncE"
+      ],
+      "developer": "Dawn Era Technology Co., Ltd.",
+      "status": "New",
+      "tags": [
+        "mafia",
+        "strategy",
+        "crime"
+      ]
+    },
+    "War Legends: RTS Strategy Game": {
+      "first_seen": "2026-05-26",
+      "last_seen": "2026-05-26",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=LWO33_WFDNM",
+        "https://www.youtube.com/watch?v=bGyW3JX7EWk"
+      ],
+      "developer": "Gear Games Global",
+      "status": "Early Access",
+      "tags": [
+        "RTS",
+        "fantasy",
+        "PvP",
+        "base-building",
+        "heroes",
+        "magic"
+      ]
+    },
+    "Warp Knights": {
+      "first_seen": "2026-05-26",
+      "last_seen": "2026-05-26",
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=u-dmdvrHNSk"
+      ],
+      "developer": "Vizta Games (MOONTON)",
+      "status": "Launched",
+      "tags": [
+        "tower-defense",
+        "strategy-RPG",
+        "sci-fi",
+        "anime",
+        "3D"
+      ]
+    },
+    "Foundation: Galactic Frontier": {
+      "first_seen": "2026-05-26",
+      "last_seen": "2026-06-08",
+      "developer": "FunPlus International AG",
+      "status": "Launched",
+      "tags": [
+        "sci-fi",
+        "strategy",
+        "SLG",
+        "base-building",
+        "IP-licensed",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=0eUiGE70IZs",
+        "https://www.youtube.com/watch?v=7N0SkKy50Kk",
+        "https://www.youtube.com/watch?v=pid0fZUCtHU",
+        "https://www.youtube.com/watch?v=feXI9-9iALY"
+      ]
+    },
+    "Dragonfall Kingdom": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-04",
+      "developer": "Game Hollywood Hong Kong Limited",
+      "status": "Launched",
+      "tags": [
+        "strategy",
+        "4X",
+        "MMO",
+        "RPG",
+        "dragon",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=1as0QjYea10",
+        "https://www.youtube.com/watch?v=W9US07uAekA",
+        "https://www.youtube.com/watch?v=Z0ROhvCm2ws",
+        "https://www.youtube.com/watch?v=mzvUL9lD-sU",
+        "https://www.youtube.com/watch?v=Rqgl1YYsiT8"
+      ]
+    },
+    "Viking Legends: Rise Of Clans": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "developer": "Tinysoft",
+      "status": "Launched",
+      "tags": [
+        "strategy",
+        "SLG",
+        "viking",
+        "clan",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=7--WuQuxw9k",
+        "https://www.youtube.com/watch?v=TDWRozh0qb4",
+        "https://www.youtube.com/watch?v=YuHDqTxzM_M"
+      ]
+    },
+    "Desire City": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-08",
+      "developer": "Tsunemitsu",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "base-building",
+        "survival"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=hAjg0JsAWlE",
+        "https://www.youtube.com/watch?v=Kjv8r0Bgqm8"
+      ]
+    },
+    "Wave Warrior": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "developer": "NaturePlay",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "tactical",
+        "wave-defense"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=z8zzTh3wlcM",
+        "https://www.youtube.com/watch?v=YphM87rKcyM"
+      ]
+    },
+    "LUTA: Luminoria Tactics": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "developer": "Honstudios",
+      "status": "CBT",
+      "tags": [
+        "card",
+        "tactics",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=hzYj-EotuKQ",
+        "https://www.youtube.com/watch?v=mW05iAPCYp4"
+      ]
+    },
+    "Space Base: Idle Tower Defense": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-03",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "tower-defense",
+        "idle",
+        "strategy",
+        "space"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=kHhTPd97R7o"
+      ]
+    },
+    "Toy Wars: Survivor TD": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-03",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "tower-defense",
+        "survival",
+        "strategy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=L5tcO9qTZzM"
+      ]
+    },
+    "Hero's Hour (Mobile)": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "developer": "Thingonitshead (ported)",
+      "status": "OBT",
+      "tags": [
+        "strategy",
+        "RPG",
+        "tactics",
+        "heroes",
+        "pixel-art"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=9caaKYwurTg"
+      ]
+    },
+    "The Last Roman Village": {
+      "first_seen": "2026-06-02",
+      "last_seen": "2026-06-02",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "strategy",
+        "village-building",
+        "roman"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=F9T3aOQ2nwA"
+      ]
+    },
+    "Game of Thrones: Dragonfire": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-13",
+      "developer": "Warner Bros. Games",
+      "status": "Launched",
+      "tags": [
+        "4X",
+        "strategy",
+        "IP",
+        "dragon",
+        "PvP",
+        "diplomacy"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=PgjIP-KgJLI",
+        "https://www.youtube.com/watch?v=4SFHmSFUgcg",
+        "https://www.youtube.com/watch?v=5og90RYzoSI",
+        "https://www.youtube.com/watch?v=u2ix7b26VdU",
+        "https://www.youtube.com/watch?v=Vc87ruM-IVM",
+        "https://www.youtube.com/watch?v=c3PnygzzCUI"
+      ]
+    },
+    "Ashfall Survivors": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-03",
+      "developer": "Unknown",
+      "status": "Early Access",
+      "tags": [
+        "survival",
+        "strategy",
+        "base-building"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=TShPb544LjA",
+        "https://www.youtube.com/watch?v=FNy-Crko61Y"
+      ]
+    },
+    "Archery Bastions: Castle War": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-03",
+      "developer": "Unknown",
+      "status": "Launched",
+      "tags": [
+        "strategy",
+        "tower-defense",
+        "medieval",
+        "castle"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=wCKomfvQjdg"
+      ]
+    },
+    "Evernight (Ever Night: Reawakening)": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-08",
+      "developer": "Hong Kong Touda Co., Limited",
+      "status": "Launched (China), CBT (SEA)",
+      "tags": [
+        "RPG",
+        "hero-collector",
+        "dark-fantasy",
+        "gacha"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=8VJy8Cc6t88",
+        "https://www.youtube.com/watch?v=JglkV8vUleQ",
+        "https://www.youtube.com/watch?v=Clt45WsuJ1A",
+        "https://www.youtube.com/watch?v=NRfMvUrWCCI"
+      ]
+    },
+    "ALLfiring": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-03",
+      "developer": "Genmu Game",
+      "status": "Launched (Global)",
+      "tags": [
+        "action-RPG",
+        "tactical",
+        "side-scroller",
+        "squad"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=bT0kexhJ2sE"
+      ]
+    },
+    "LAST ORIGIN R+": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-03",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "strategy",
+        "RPG",
+        "tactics"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=O2BT4nFz63Q"
+      ]
+    },
+    "Final Fantasy XIV: Crystal World": {
+      "first_seen": "2026-06-03",
+      "last_seen": "2026-06-08",
+      "developer": "Tencent Lightspeed Studios / Square Enix",
+      "status": "Launched (China), Beta",
+      "tags": [
+        "MMORPG",
+        "IP",
+        "fantasy",
+        "Tencent"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=s56T66Q-OB8",
+        "https://www.youtube.com/watch?v=623R0ljf1ls",
+        "https://www.youtube.com/watch?v=DiStVV8wCpU"
+      ]
+    },
+    "Block Bastion: Hero TD": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-04",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "tower-defense",
+        "strategy",
+        "hero",
+        "block"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=cEFpDH6MA-M"
+      ]
+    },
+    "The Song of the Wind and Dragons": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-04",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "strategy",
+        "RPG",
+        "dragon"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=AMb5RrlbBVs"
+      ]
+    },
+    "The Great Chief": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-04",
+      "developer": "Unknown (possibly Seagame)",
+      "status": "New",
+      "tags": [
+        "strategy",
+        "tower-defense",
+        "tribal"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=U5_FQg9N__U"
+      ]
+    },
+    "Three Kingdoms: The Scheme to Conquer the Land": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-04",
+      "developer": "Unknown",
+      "status": "New",
+      "tags": [
+        "SLG",
+        "strategy",
+        "three-kingdoms"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=QP2WmjwgHSc"
+      ]
+    },
+    "Last Stand Hero": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-04",
+      "developer": "Kronia Technologies",
+      "status": "New",
+      "tags": [
+        "zombie",
+        "survival",
+        "strategy",
+        "defense"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=MiblzyJlE9I",
+        "https://www.youtube.com/watch?v=zDvh3gBdtms"
+      ]
+    },
+    "Illusion Connect: Re": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-08",
+      "developer": "SUGARGAME NETWORK LIMITED (Hong Kong)",
+      "status": "Launched (Global re-release)",
+      "tags": [
+        "tactics",
+        "strategy-RPG",
+        "anime",
+        "hero-collector"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=Skyb_W2_Tcg",
+        "https://www.youtube.com/watch?v=_-bHRKFJ5H0",
+        "https://www.youtube.com/watch?v=DNwlLR5pDHg",
+        "https://www.youtube.com/watch?v=cVNZ8o19ov4",
+        "https://www.youtube.com/watch?v=3aFCYyVlbsc"
+      ]
+    },
+    "Shellfire: Artillery Strike": {
+      "first_seen": "2026-06-04",
+      "last_seen": "2026-06-04",
+      "developer": "CHEELY INTERACTIVE STUDIO - FZCO",
+      "status": "New",
+      "tags": [
+        "artillery",
+        "strategy",
+        "action"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=IEMYyChHi0E"
+      ]
+    },
+    "Doomsday Home": {
+      "first_seen": "2026-06-08",
+      "last_seen": "2026-06-08",
+      "developer": "SkyRise Digital Pte. Ltd.",
+      "status": "Early Access",
+      "tags": [
+        "survival",
+        "strategy",
+        "base-building",
+        "nuclear",
+        "frost"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=7fqsHRNL8WM",
+        "https://www.youtube.com/watch?v=6Kq4E2iWQGk"
+      ]
+    },
+    "DoomSim: Yes, Mayor!": {
+      "first_seen": "2026-06-08",
+      "last_seen": "2026-06-08",
+      "developer": "SkyRise Digital Pte. Ltd.",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "city-management",
+        "survival",
+        "virus"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=NhIV6nEOTng"
+      ]
+    },
+    "Rise of Human": {
+      "first_seen": "2026-06-08",
+      "last_seen": "2026-06-08",
+      "developer": "Aetheris Studio",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "online",
+        "new"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=NNNyvVFcXcQ",
+        "https://www.youtube.com/watch?v=U7LEIM8jqjY"
+      ]
+    },
+    "Frost Kingdom": {
+      "first_seen": "2026-06-08",
+      "last_seen": "2026-06-08",
+      "developer": "Nexus",
+      "status": "CBT",
+      "tags": [
+        "SLG",
+        "merge",
+        "medieval",
+        "Web3",
+        "base-building"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=Foxa6CtE1pc",
+        "https://www.youtube.com/watch?v=KLw2PwnHN-k"
+      ]
+    },
+    "Freedom War": {
+      "first_seen": "2026-06-08",
+      "last_seen": "2026-06-08",
+      "developer": "ZephyrusGames",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "prison",
+        "war",
+        "multi-language"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=6gnnbN0RLus"
+      ]
+    },
+    "Top Lords": {
+      "first_seen": "2026-06-08",
+      "last_seen": "2026-06-08",
+      "developer": "GAME SPARK PTE. LTD. (Singapore)",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "medieval",
+        "hero-collector",
+        "kingdom-builder",
+        "runner",
+        "PvP"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=4tK5N3R3thA"
+      ]
+    },
+    "Castle Busters": {
+      "first_seen": "2026-06-09",
+      "last_seen": "2026-06-09",
+      "developer": "Epicoro (published by VOODOO)",
+      "status": "Launched",
+      "tags": [
+        "strategy",
+        "PvP",
+        "brawler",
+        "castle",
+        "real-time",
+        "physics"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=1_9yMa8rthg",
+        "https://www.youtube.com/watch?v=VZWx0p8YPsk"
+      ]
+    },
+    "Crawl Tactics": {
+      "first_seen": "2026-06-09",
+      "last_seen": "2026-06-09",
+      "developer": "icefill (Korean indie)",
+      "status": "Launched (PC-to-mobile port)",
+      "tags": [
+        "tactics",
+        "strategy",
+        "RPG",
+        "roguelike",
+        "turn-based",
+        "pixel-art"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=1_9yMa8rthg"
+      ]
+    },
+    "Poly Zombie War": {
+      "first_seen": "2026-06-09",
+      "last_seen": "2026-06-09",
+      "developer": "Raadcat",
+      "status": "Launched (May 30, 2026)",
+      "tags": [
+        "zombie",
+        "co-op",
+        "shooter",
+        "strategy-borderline"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=3dZeJV8yyNo"
+      ]
+    },
+    "Proteccoon: Tower Defense": {
+      "first_seen": "2026-06-13",
+      "last_seen": "2026-06-13",
+      "developer": "Teamsparta Inc. (Korea)",
+      "status": "Early Access",
+      "tags": [
+        "tower-defense",
+        "strategy",
+        "hero-defense",
+        "Korea",
+        "possibly-rename-of-Mad-Raccoon-TD"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=YSPItzBPzfk"
+      ]
+    },
+    "CORE EVE": {
+      "first_seen": "2026-06-13",
+      "last_seen": "2026-06-13",
+      "developer": "Unknown (KR, One Store)",
+      "status": "CBT",
+      "tags": [
+        "unknown-genre",
+        "Korea",
+        "CBT",
+        "large-size-654MB"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=EFap4iYxGfI"
+      ]
+    },
+    "Toriia": {
+      "first_seen": "2026-06-16",
+      "last_seen": "2026-06-16",
+      "developer": "Pocket Play Studio",
+      "status": "Early Access (coming soon)",
+      "tags": [
+        "tactical-RPG",
+        "fantasy",
+        "turn-based",
+        "party-based",
+        "expedition"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=U4EG3nN080w",
+        "https://www.youtube.com/watch?v=SYA1h_UZSJU"
+      ]
+    },
+    "Soulfire Arena": {
+      "first_seen": "2026-06-16",
+      "last_seen": "2026-06-16",
+      "developer": "Bouchriha Star Games",
+      "status": "Early Access",
+      "tags": [
+        "RPG",
+        "arena"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=vYRD7WqzLpQ"
+      ]
+    },
+    "Heavenfall Arena": {
+      "first_seen": "2026-06-16",
+      "last_seen": "2026-06-16",
+      "developer": "Gamee Global",
+      "status": "Launched",
+      "tags": [
+        "RPG",
+        "arena"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=qRz8c94-40c"
+      ]
+    },
+    "Skyrama Island Survival": {
+      "first_seen": "2026-06-16",
+      "last_seen": "2026-06-16",
+      "developer": "Bigpoint",
+      "status": "Launched",
+      "tags": [
+        "strategy",
+        "survival",
+        "base-building",
+        "IP",
+        "skyrama-rework"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=f89zmLvt3Vk"
+      ]
+    },
+    "Last Siren: Tavern Rise": {
+      "first_seen": "2026-06-16",
+      "last_seen": "2026-06-16",
+      "developer": "Larks Holding Limited",
+      "status": "Early Access",
+      "tags": [
+        "strategy",
+        "management-RPG",
+        "tavern",
+        "SEA-market"
+      ],
+      "seen_videos": [
+        "https://www.youtube.com/watch?v=i06C_0orry8",
+        "https://www.youtube.com/watch?v=9NxG4Nz1O5M"
+      ]
+    }
+  }
+}

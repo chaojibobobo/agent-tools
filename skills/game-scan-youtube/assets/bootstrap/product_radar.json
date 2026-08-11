@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "last_updated": null,
+  "last_successful_scan_end": null,
+  "countries": [
+    {
+      "code": "MY",
+      "name": "Malaysia",
+      "enabled": true,
+      "metrics": {"last_checked_at": null, "last_run_status": null, "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0, "observations": 0, "new_listings": 0, "product_leads": 0, "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0}
+    },
+    {
+      "code": "ID",
+      "name": "Indonesia",
+      "enabled": true,
+      "metrics": {"last_checked_at": null, "last_run_status": null, "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0, "observations": 0, "new_listings": 0, "product_leads": 0, "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0}
+    },
+    {
+      "code": "PH",
+      "name": "Philippines",
+      "enabled": true,
+      "metrics": {"last_checked_at": null, "last_run_status": null, "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0, "observations": 0, "new_listings": 0, "product_leads": 0, "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0}
+    },
+    {
+      "code": "GB",
+      "name": "United Kingdom",
+      "enabled": true,
+      "metrics": {"last_checked_at": null, "last_run_status": null, "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0, "observations": 0, "new_listings": 0, "product_leads": 0, "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0}
+    },
+    {
+      "code": "TH",
+      "name": "Thailand",
+      "enabled": true,
+      "metrics": {"last_checked_at": null, "last_run_status": null, "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0, "observations": 0, "new_listings": 0, "product_leads": 0, "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0}
+    },
+    {
+      "code": "CA",
+      "name": "Canada",
+      "enabled": true,
+      "metrics": {"last_checked_at": null, "last_run_status": null, "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0, "observations": 0, "new_listings": 0, "product_leads": 0, "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0}
+    }
+  ],
+  "products": {},
+  "run_history": []
+}

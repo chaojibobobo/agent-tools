@@ -1,6 +1,8 @@
 # Game Scan YouTube
 
-面向移动游戏竞品情报的 YouTube 增量扫描 skill。它以频道 RSS 为稳定骨架，补充网页搜索和商店信号，按 `seen_games.json` 去重，生成日期报告，并可推送到飞书。
+面向移动 4X SLG 早期情报的双雷达 skill：动态频道池负责发现一手 YouTube 实机，独立产品雷达负责监测马来西亚、印度尼西亚、菲律宾、英国、泰国、加拿大的早期测试上架。两路信号汇合后经过结构化 `4X-SLG-STRICT-v1` 门禁，再生成报告并推送飞书。
+
+频道权重只评价严格4X命中、领先发现、独有发现和视频证据质量；目标国家覆盖不影响频道权重。RSS/频道页可用性单独记录为 `source_health`。
 
 本目录从 Claude Code 真源迁入，已适配 Codex；核心筛选逻辑、历史报告和持续状态均保留。
 
@@ -14,6 +16,8 @@ game-scan-youtube/
 ├── scripts/
 │   ├── init_workspace.sh
 │   ├── collect_rss.py
+│   ├── prepare_product_radar.py
+│   ├── intelligence_state.py
 │   ├── validate_run.py
 │   ├── commit_state.py
 │   ├── run_scan.sh
@@ -22,12 +26,23 @@ game-scan-youtube/
 │   └── push_feishu.py
 ├── assets/bootstrap/
 │   ├── channels.json
-│   └── seen_games.json
+│   ├── seen_games.json
+│   ├── candidate_history.json
+│   ├── product_radar.json
+│   └── scan_state.json
 └── references/history/
-    ├── reports/
-    ├── investigations/
-    └── operations/
+    ├── README.md
+    └── reports/
 ```
+
+新运行会产生：
+
+- `scan-input-YYYY-MM-DD.json`：游标感知的 RSS + 频道页降级证据。
+- `product-radar-input-YYYY-MM-DD.json`：六国独立搜索任务。
+- `candidate-ledger-YYYY-MM-DD.json`：Core / Pending / Reject / Product Lead 的结构化判断账本。
+- `candidate_history.json`：含 Reject 在内的长期判断记忆。
+- `product_radar.json`：六国 checked / failed / not-run 覆盖、去重后的产品观察与 YouTube 转换指标。
+- `scan_state.json`：仅成功提交后推进的扫描游标。
 
 ## 安装到 Codex
 
@@ -50,7 +65,7 @@ skills/game-scan-youtube/scripts/init_workspace.sh
 默认位置：
 
 ```text
-~/.game-scan-youtube/workspace
+/Users/bobo/Codexspace/tools/game-scan-youtube
 ```
 
 指定其他位置：
@@ -72,10 +87,10 @@ export GAME_SCAN_WORK_DIR=/path/to/workspace
 交互使用时，可以直接告诉 Codex：
 
 ```text
-运行 game-scan-youtube，扫描今天的新移动策略游戏视频。
+运行 game-scan-youtube，扫描今天的新移动 4X SLG 视频与六国新品信号。
 ```
 
-非交互运行。脚本会先在父进程采集 RSS，再让 agent 只分析本地证据：
+交互式手动扫描由当前 Codex 直接按 skill 阶段执行，不再启动嵌套的 `codex exec`。只有明确需要非交互 runner 时才使用下面脚本；它会先在父进程采集 RSS，再让独立 agent 分析本地证据：
 
 ```bash
 skills/game-scan-youtube/scripts/run_scan.sh --dry-run
@@ -111,7 +126,7 @@ FEISHU_USER_OPEN_ID=...
 ```bash
 python3 skills/game-scan-youtube/scripts/push_feishu.py \
   --date 2026-06-16 \
-  --dir ~/.game-scan-youtube/workspace \
+  --dir /Users/bobo/Codexspace/tools/game-scan-youtube \
   --dry-run
 ```
 
@@ -120,7 +135,7 @@ python3 skills/game-scan-youtube/scripts/push_feishu.py \
 ```bash
 python3 skills/game-scan-youtube/scripts/push_feishu.py \
   --date YYYY-MM-DD \
-  --dir ~/.game-scan-youtube/workspace
+  --dir /Users/bobo/Codexspace/tools/game-scan-youtube
 ```
 
 飞书输出默认采用 Decision Card v3：
@@ -166,15 +181,14 @@ python3 skills/game-scan-youtube/scripts/collect_rss.py \
 
 python3 skills/game-scan-youtube/scripts/validate_run.py \
   --date YYYY-MM-DD \
-  --dir /path/to/workspace
+  --dir /path/to/workspace \
+  --require-intelligence-ledger
 ```
 
 ## 历史资产
 
 - 18 份日期报告：`2026-05-12` 至 `2026-06-16`，日期不连续。
-- 开发者调查：Markdown 与一批结构化 JSON 数据。
-- 运行认知：项目记忆、预算/失败路由。
-- 持续状态快照：`channels.json`、`seen_games.json`。
+- 持续状态快照：`channels.json`、`seen_games.json`、`candidate_history.json`、`product_radar.json`、`scan_state.json`。
 
 详细清单和来源边界见 `references/history/README.md`。
 
@@ -184,8 +198,10 @@ python3 skills/game-scan-youtube/scripts/validate_run.py \
 - `.omc` 会话状态。
 - cron 原始日志、锁和完成戳。
 - `.env` 或任何凭据。
+- 含个人工作上下文的 operations 记录。
+- 含第三方联系邮箱的开发者调查原稿。
 
-这些不是扫描成果，且可能包含私人上下文、临时输出或敏感运行信息。
+这些不是公开 skill 的必要运行资产，且可能包含私人上下文、第三方联系方式、临时输出或敏感运行信息。本地副本可以继续保留，但不进入公开远端。
 
 ## 依赖
 
@@ -196,7 +212,8 @@ python3 skills/game-scan-youtube/scripts/validate_run.py \
 
 ## 已知边界
 
-- YouTube RSS、页面抓取和搜索源都可能出现 `403`、`429` 或 `5xx`。
+- YouTube RSS、页面抓取和搜索源都可能出现 `403`、`429` 或 `5xx`；RSS 失败会自动尝试频道页，频道页相对时间不得冒充准确上传时间。
+- 六国上架判断必须来自带 `gl=国家码` / `country=国家码` 的本地化商店源；普通搜索摘要只能发现线索，不能证明区域可用。
 - 连续失败时要降级并明确报告证据缺口，不要循环重试，也不要把 cron 启动当成扫描完成。
 - `seen_games.json` 是去重真源；未确认的新视频不得写成已验证发现。
 - 嵌套 Codex/Claude 不假设具备网络；RSS 必须先落成本地 `scan-input-*.json`。

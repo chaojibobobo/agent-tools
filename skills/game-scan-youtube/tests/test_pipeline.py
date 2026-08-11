@@ -102,6 +102,45 @@ def decision_fixture():
     }
 
 
+class SkillPolicyTests(unittest.TestCase):
+    def test_skill_declares_strict_4x_slg_evidence_gate_and_counterexamples(self):
+        """Keeps broad mobile-strategy recall from replacing the target genre."""
+        skill = (SKILL_DIR / "SKILL.md").read_text()
+
+        for required in (
+            "4X-SLG-STRICT-v1",
+            "Base / City",
+            "World Map / Territory",
+            "Resource Economy",
+            "Army / Alliance War",
+            "Auto-Battler",
+            "Roguelike TD",
+            "action survival",
+            "A Strategy/MMORTS store label is not genre evidence",
+        ):
+            self.assertIn(required, skill)
+
+    def test_skill_declares_dual_radar_country_and_channel_weight_boundaries(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text()
+
+        for required in (
+            "Channel Radar",
+            "Product Radar",
+            "MY / ID / PH / GB / TH / CA",
+            "target-country coverage never affects channel weight",
+            "40% strict 4X yield",
+            "25% early discovery",
+            "20% unique discovery",
+            "15% evidence quality",
+            "candidate-ledger-YYYY-MM-DD.json",
+            "Product Lead",
+            "channel-page fallback",
+            "source_health",
+            "intelligence_score",
+        ):
+            self.assertIn(required, skill)
+
+
 class DecisionCardModelTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -174,7 +213,7 @@ class DecisionCardRenderingTests(unittest.TestCase):
         self.assertIn("核心机制：", text)
         self.assertNotIn("low gameplay detail should be compacted", text)
         self.assertLessEqual(len(text), 500)
-        self.assertLessEqual(len(text.splitlines()), 15)
+        self.assertLessEqual(len(text.splitlines()), 20)
 
         actions = [
             element
@@ -221,6 +260,77 @@ class DecisionCardRenderingTests(unittest.TestCase):
         self.assertIn("https://www.youtube.com/watch?v=implicit-source", payload)
         self.assertIn("https://www.youtube.com/watch?v=track-source", payload)
 
+    def test_interactive_card_does_not_hide_supplemental_games_after_four(self):
+        """Keeps displayed names/links aligned with the supplemental count."""
+        parsed = decision_fixture()
+        for index in range(3, 7):
+            parsed["games"].insert(
+                index,
+                decision_game(
+                    f"Supplemental {index}",
+                    "single-channel strategy",
+                    priority="Track",
+                    videos=[
+                        {
+                            "title": f"Source {index}",
+                            "url": f"https://www.youtube.com/watch?v=supplemental-{index}",
+                            "meta": "Channel S · 10:00",
+                        }
+                    ],
+                ),
+            )
+
+        card = self.card.build_interactive_card(
+            date(2026, 7, 27),
+            parsed,
+            {"period": "", "total_games": 0, "total_channels": 50, "hot_games": []},
+        )
+        payload = json.dumps(card, ensure_ascii=False)
+
+        for index in range(3, 7):
+            self.assertIn(f"Supplemental {index}", payload)
+            self.assertIn(
+                f"https://www.youtube.com/watch?v=supplemental-{index}",
+                payload,
+            )
+
+    def test_interactive_card_lists_watchlist_and_updates_with_youtube_links(self):
+        """Catches observation and update sections collapsing into counts only."""
+        parsed = decision_fixture()
+        parsed["games"][3]["videos"] = [
+            {
+                "title": "Watch source",
+                "url": "https://www.youtube.com/watch?v=watch-source",
+                "meta": "Watch Channel · 10:00",
+            }
+        ]
+        parsed["games"][4]["videos"] = [
+            {
+                "title": "Update source",
+                "url": "https://www.youtube.com/watch?v=update-source",
+                "meta": "Update Channel · 10:00",
+            }
+        ]
+        card = self.card.build_interactive_card(
+            date(2026, 7, 27),
+            parsed,
+            {
+                "period": "",
+                "total_games": 0,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+        text = self.card.visible_card_text(card)
+        payload = json.dumps(card, ensure_ascii=False)
+
+        self.assertIn("⚪ 观察", text)
+        self.assertIn("Watch Candidate｜YouTube 原视频", text)
+        self.assertIn("↻ 更新", text)
+        self.assertIn("Known Game｜YouTube 原视频", text)
+        self.assertIn("https://www.youtube.com/watch?v=watch-source", payload)
+        self.assertIn("https://www.youtube.com/watch?v=update-source", payload)
+
     def test_compact_post_links_every_confirmed_new_game_to_youtube(self):
         """Catches the post fallback dropping sources present in the card."""
         parsed = decision_fixture()
@@ -262,8 +372,43 @@ class DecisionCardRenderingTests(unittest.TestCase):
                 "https://www.youtube.com/watch?v=implicit-source",
                 "https://www.youtube.com/watch?v=track-source",
             ],
-            source_links,
+            source_links[:3],
         )
+
+    def test_compact_post_lists_watchlist_and_updates_with_youtube_links(self):
+        """Keeps fallback delivery equivalent to the interactive card."""
+        parsed = decision_fixture()
+        parsed["games"][3]["videos"] = [
+            {
+                "title": "Watch source",
+                "url": "https://www.youtube.com/watch?v=watch-source",
+                "meta": "Watch Channel · 10:00",
+            }
+        ]
+        parsed["games"][4]["videos"] = [
+            {
+                "title": "Update source",
+                "url": "https://www.youtube.com/watch?v=update-source",
+                "meta": "Update Channel · 10:00",
+            }
+        ]
+        post = self.card.build_compact_post(
+            date(2026, 7, 27),
+            parsed,
+            {
+                "period": "",
+                "total_games": 0,
+                "total_channels": 50,
+                "hot_games": [],
+            },
+        )
+        text = self.card.visible_post_text(post)
+        payload = json.dumps(post, ensure_ascii=False)
+
+        self.assertIn("⚪ 观察｜Watch Candidate｜YouTube 原视频", text)
+        self.assertIn("↻ 更新｜Known Game｜YouTube 原视频", text)
+        self.assertIn("https://www.youtube.com/watch?v=watch-source", payload)
+        self.assertIn("https://www.youtube.com/watch?v=update-source", payload)
 
     def test_rendering_rejects_confirmed_new_game_without_youtube_source(self):
         """Catches source-less discoveries being silently published as confirmed."""
@@ -431,6 +576,34 @@ class ReportParsingTests(unittest.TestCase):
             parsed["takeaways"],
         )
 
+    def test_strict_4x_profile_rejects_non_core_new_game_before_rendering(self):
+        """Prevents generic strategy games from entering a strict 4X-SLG card."""
+        with tempfile.TemporaryDirectory() as raw_dir:
+            report = self.write_report(
+                Path(raw_dir),
+                """# Game Scout — 2026-08-06
+
+> **Scan Profile:** 4X-SLG-STRICT-v1
+
+## New Games
+
+### Merge Arena — short-session auto-battler
+- [Gameplay](https://www.youtube.com/watch?v=merge1) — Channel · 10:00
+
+**4X Fit:** Reject — no persistent city or world territory
+**Priority:** Track
+""",
+            )
+
+            parsed = self.push_feishu.parse_report(report)
+
+            with self.assertRaisesRegex(ValueError, "strict 4X-SLG"):
+                self.push_feishu.build_interactive_card(
+                    date(2026, 8, 6),
+                    parsed,
+                    {"period": "", "total_games": 0, "total_channels": 0},
+                )
+
 
 class FeishuExpressionTests(unittest.TestCase):
     @classmethod
@@ -555,7 +728,8 @@ class FeishuExpressionTests(unittest.TestCase):
         self.assertIn("核心机制｜4-channel launch", text)
         self.assertNotIn("high gameplay detail", text)
         self.assertNotIn("low gameplay detail should be compacted", text)
-        self.assertIn("⚪ 观察 1 款 · 更新 1 款", text)
+        self.assertIn("⚪ 观察｜Watch Candidate", text)
+        self.assertIn("↻ 更新｜Known Game", text)
         self.assertLessEqual(len(text), 500)
         self.assertLessEqual(len(text.splitlines()), 15)
 
@@ -718,6 +892,74 @@ class CollectorTests(unittest.TestCase):
 
 
 class CompletionGateTests(unittest.TestCase):
+    def test_validator_requires_strict_profile_from_cutover_date(self):
+        """Prevents a new report from bypassing the 4X gate by omitting its profile."""
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            (root / "channels.json").write_text(json.dumps({"seed_channels": []}))
+            (root / "seen_games.json").write_text(json.dumps({"games": {}}))
+            (root / "2026-08-06.md").write_text(
+                """# Game Scout — 2026-08-06
+
+## New Games
+
+### Generic Strategy — broad strategy label
+- [Gameplay](https://www.youtube.com/watch?v=generic1) — Channel · 10:00
+"""
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "validate_run.py"),
+                    "--date",
+                    "2026-08-06",
+                    "--dir",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("4X-SLG-STRICT-v1", result.stderr)
+
+    def test_validator_blocks_non_core_game_in_strict_4x_profile(self):
+        """Makes genre fit a completion gate, not only a card-rendering concern."""
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            (root / "channels.json").write_text(json.dumps({"seed_channels": []}))
+            (root / "seen_games.json").write_text(json.dumps({"games": {}}))
+            (root / "2026-08-06.md").write_text(
+                """# Game Scout — 2026-08-06
+
+> **Scan Profile:** 4X-SLG-STRICT-v1
+
+## New Games
+
+### Arena Defense — short-session tower defense
+- [Gameplay](https://www.youtube.com/watch?v=arena1) — Channel · 10:00
+
+**4X Fit:** Reject — no persistent world map
+"""
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "validate_run.py"),
+                    "--date",
+                    "2026-08-06",
+                    "--dir",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("strict 4X-SLG", result.stderr)
+
     def test_daily_wrapper_does_not_stamp_child_exit_zero_without_evidence(self):
         """Catches the false-completion bug where exit 0 alone writes a done stamp."""
         with tempfile.TemporaryDirectory() as raw_dir:
@@ -749,6 +991,42 @@ class CompletionGateTests(unittest.TestCase):
 
 
 class StateCommitTests(unittest.TestCase):
+    def test_state_commit_rejects_non_core_strict_4x_entry(self):
+        """Keeps irrelevant strategy games out of persistent dedup state."""
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            (root / "seen_games.json").write_text(json.dumps({"games": {}}))
+            (root / "2026-08-06.md").write_text(
+                """# Game Scout — 2026-08-06
+
+> **Scan Profile:** 4X-SLG-STRICT-v1
+
+## New Games
+
+### Merge Arena — short-session auto-battler
+- [Gameplay](https://www.youtube.com/watch?v=merge1) — Channel · 10:00
+
+**4X Fit:** Reject — no persistent city or world territory
+"""
+            )
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "commit_state.py"),
+                    "--date",
+                    "2026-08-06",
+                    "--dir",
+                    str(root),
+                ],
+                text=True,
+                capture_output=True,
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("strict 4X-SLG", result.stderr)
+            self.assertEqual({}, json.loads((root / "seen_games.json").read_text())["games"])
+
     def test_state_is_updated_from_validated_report_without_duplicate_urls(self):
         """Catches dedup state not advancing, or the same video being appended twice."""
         with tempfile.TemporaryDirectory() as raw_dir:
