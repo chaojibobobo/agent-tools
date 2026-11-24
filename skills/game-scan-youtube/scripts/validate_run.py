@@ -5,6 +5,7 @@ import argparse
 import importlib.util
 import json
 import sys
+from datetime import date as calendar_date
 from pathlib import Path
 
 
@@ -13,6 +14,10 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import intelligence_state
+import decision_card
+from run_health import is_degraded, health_banner
+from signal_funnel import prepare_report
+from market_scope import expected_run_markets
 
 
 def load_push_module():
@@ -31,14 +36,33 @@ def validate(
     require_intelligence_ledger: bool = False,
 ) -> dict:
     errors = []
+    push = load_push_module()
+    scan_path = work_dir / f"scan-input-{date}.json"
+    ledger_path = work_dir / f"candidate-ledger-{date}.json"
+    require_intelligence_ledger = require_intelligence_ledger or (work_dir / f"product-radar-input-{date}.json").exists()
+    scan_input = None
+    if scan_path.exists() or require_intelligence_ledger or ledger_path.exists():
+        try:
+            scan_input = json.loads(scan_path.read_text())
+            if is_degraded(scan_input):
+                raise ValueError(f"RUN_DEGRADED {health_banner(scan_input)}：不能完成正常日报")
+            if require_intelligence_ledger or ledger_path.exists():
+                status = (scan_input.get("source_summary") or {}).get("status")
+                if status not in {"complete", "degraded"}:
+                    raise ValueError(f"source status is {status!r}")
+                window = scan_input.get("window") or {}
+                if not window.get("start") or not window.get("end"):
+                    raise ValueError("scan input has no complete window")
+        except (ValueError, TypeError, OSError, AttributeError) as exc:
+            raise ValueError(f"scan input failed: {exc}") from exc
     report_path = work_dir / f"{date}.md"
     if not report_path.is_file() or report_path.stat().st_size == 0:
         errors.append(f"missing or empty report: {report_path}")
         parsed = None
     else:
         try:
-            parsed = load_push_module().parse_report(report_path)
-            load_push_module().validate_4x_profile(
+            parsed = push.parse_report(report_path)
+            push.validate_4x_profile(
                 parsed,
                 require_strict=date >= "2026-08-06",
             )
@@ -55,34 +79,28 @@ def validate(
             parsed = None
 
     ledger = None
-    ledger_path = work_dir / f"candidate-ledger-{date}.json"
     if require_intelligence_ledger or ledger_path.exists():
         try:
             if not ledger_path.is_file():
                 raise ValueError(f"missing candidate ledger: {ledger_path}")
             ledger = json.loads(ledger_path.read_text())
             intelligence_state.validate_candidate_ledger(ledger)
-            if require_intelligence_ledger:
-                intelligence_state.validate_product_radar_run(ledger)
+            if require_intelligence_ledger or "product_radar_run" in ledger:
+                intelligence_state.validate_product_radar_run(ledger, expected_run_markets(work_dir, date))
             if parsed is None:
                 raise ValueError("report is unavailable for candidate-ledger validation")
             intelligence_state.validate_report_candidates(parsed["games"], ledger)
         except Exception as exc:
             errors.append(f"candidate ledger failed: {exc}")
 
-    scan_input = None
-    if require_intelligence_ledger or ledger is not None:
-        scan_input_path = work_dir / f"scan-input-{date}.json"
+    if parsed is not None:
         try:
-            scan_input = json.loads(scan_input_path.read_text())
-            source_status = (scan_input.get("source_summary") or {}).get("status")
-            if source_status not in {"complete", "degraded"}:
-                raise ValueError(f"source status is {source_status!r}")
-            window = scan_input.get("window") or {}
-            if not window.get("start") or not window.get("end"):
-                raise ValueError("scan input has no complete window")
+            seen_path = work_dir / "seen_games.json"
+            prepare_report(parsed, scan_input, ledger, json.loads(seen_path.read_text()))
+            summary = push.build_7day_summary(seen_path, calendar_date.fromisoformat(date), work_dir / "channels.json")
+            decision_card.validate_decision_copy(parsed, summary)
         except Exception as exc:
-            errors.append(f"scan input failed: {exc}")
+            errors.append(f"publication gate failed: {exc}")
 
     state_names = ["channels.json", "seen_games.json"]
     if require_intelligence_ledger or ledger is not None:

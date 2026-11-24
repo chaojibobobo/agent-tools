@@ -3,20 +3,22 @@
 
 import json
 import re
+import sys
 from copy import deepcopy
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Dict, Iterable, List, Optional
+from urllib.parse import parse_qs, urlparse
+
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from decision_card import youtube_video_id
+from market_scope import DEFAULT_MARKETS, is_market_code, market_name, validate_markets
 
 
-TARGET_COUNTRIES = (
-    {"code": "MY", "name": "Malaysia"},
-    {"code": "ID", "name": "Indonesia"},
-    {"code": "PH", "name": "Philippines"},
-    {"code": "GB", "name": "United Kingdom"},
-    {"code": "TH", "name": "Thailand"},
-    {"code": "CA", "name": "Canada"},
-)
-TARGET_COUNTRY_CODES = tuple(item["code"] for item in TARGET_COUNTRIES)
+# Backward-compatible names for the default configuration, not an admission list.
+TARGET_COUNTRIES = tuple({"code": c, "name": market_name(c)} for c in DEFAULT_MARKETS)
+TARGET_COUNTRY_CODES = DEFAULT_MARKETS
 PILLAR_KEYS = (
     "base_city",
     "world_map_territory",
@@ -24,6 +26,14 @@ PILLAR_KEYS = (
     "army_alliance_war",
 )
 CLASSIFICATIONS = {"Core", "Pending", "Reject", "Product Lead"}
+PROGRESSION_DEPTHS = {"tutorial", "early", "mid", "late", "unknown"}
+WORLD_MAP_UNLOCK_STATUSES = {
+    "shown",
+    "not_shown",
+    "known_later",
+    "absent",
+    "unknown",
+}
 SCORE_WEIGHTS = {
     "strict_4x_yield": 0.40,
     "early_discovery": 0.25,
@@ -32,47 +42,73 @@ SCORE_WEIGHTS = {
 }
 
 
+def _market_record(code: str, enabled: bool) -> dict:
+    return {
+        "code": code, "name": market_name(code), "enabled": enabled,
+        "metrics": {
+            "last_checked_at": None, "last_run_status": None,
+            "runs_checked": 0, "runs_failed": 0, "runs_not_run": 0,
+            "observations": 0, "new_listings": 0, "product_leads": 0,
+            "core_pending_conversions": 0, "youtube_reverse_lookup_successes": 0,
+        },
+    }
+
+
 def new_product_radar_state() -> dict:
     return {
         "schema_version": 1,
         "last_updated": None,
         "last_successful_scan_end": None,
-        "countries": [
-            {
-                **country,
-                "enabled": True,
-                "metrics": {
-                    "last_checked_at": None,
-                    "last_run_status": None,
-                    "runs_checked": 0,
-                    "runs_failed": 0,
-                    "runs_not_run": 0,
-                    "observations": 0,
-                    "new_listings": 0,
-                    "product_leads": 0,
-                    "core_pending_conversions": 0,
-                    "youtube_reverse_lookup_successes": 0,
-                },
-            }
-            for country in TARGET_COUNTRIES
-        ],
+        "countries": [_market_record(code, True) for code in DEFAULT_MARKETS],
         "products": {},
         "run_history": [],
     }
 
 
 def _normalized_name(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
+    return "".join(c for c in (value or "").casefold() if c.isalnum())
 
 
-def _is_localized_store_url(value: str, country: str) -> bool:
-    return bool(
-        re.search(
-            rf"(?:[?&](?:gl|country)={re.escape(country)}(?:&|$)|apps\.apple\.com/{country.lower()}/)",
-            value or "",
-            flags=re.IGNORECASE,
-        )
-    )
+def _official_url(value):
+    """Only direct official storefronts. Reject ambiguous hosts/ports and credentials."""
+    try:
+        p = urlparse(value)
+        if (p.scheme != "https" or p.username is not None or p.password is not None
+                or p.port not in (None, 443)
+                or p.hostname not in {"play.google.com", "apps.apple.com", "itunes.apple.com"}):
+            return None
+        return p
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+
+def _listing_id(value, country=None):
+    """Return a product identity, not a search/category URL or a lookalike query."""
+    p = _official_url(value)
+    if p is None:
+        return None
+    query = parse_qs(p.query, keep_blank_values=True)
+    app_ids = query.get("id", [])
+    if p.hostname == "play.google.com" and p.path == "/store/apps/details":
+        if (len(app_ids) == 1 and re.fullmatch(r"[\w.]+", app_ids[0], re.ASCII)
+                and (not country or [v.upper() for v in query.get("gl", [])] == [country])):
+            return ("google_play", app_ids[0])
+    if p.hostname == "apps.apple.com":
+        item = re.fullmatch(r"/([a-zA-Z]{2})/app/(?:[^/]+/)?id([0-9]+)/?", p.path)
+        if item and (not country or item[1].upper() == country):
+            return ("app_store", item[2])
+    if p.hostname == "itunes.apple.com" and p.path == "/lookup":
+        if (len(app_ids) == 1 and re.fullmatch(r"[0-9]+", app_ids[0])
+                and (not country or [v.upper() for v in query.get("country", [])] == [country])):
+            return ("app_store", app_ids[0])
+    return None
+
+
+def _is_localized_google_play_url(value: str, country: str) -> bool:
+    parsed = _official_url(value)
+    return bool(parsed and parsed.hostname == "play.google.com"
+                and parsed.path in {"/store/search", "/store/apps/details"}
+                and [v.upper() for v in parse_qs(parsed.query, keep_blank_values=True).get("gl", [])] == [country])
 
 
 def candidate_identity(candidate: dict) -> str:
@@ -100,9 +136,34 @@ def _status(pillars: dict, key: str) -> str:
     return status
 
 
+def _validate_evidence_stage(candidate: dict, identity: str) -> dict:
+    stage = candidate.get("evidence_stage")
+    if not isinstance(stage, dict):
+        raise ValueError(f"schema v2 candidate has no evidence_stage: {identity}")
+    if stage.get("progression_depth") not in PROGRESSION_DEPTHS:
+        raise ValueError(f"invalid progression_depth for {identity}")
+    if stage.get("world_map_unlock_status") not in WORLD_MAP_UNLOCK_STATUSES:
+        raise ValueError(f"invalid world_map_unlock_status for {identity}")
+    if not isinstance(stage.get("test_stage_uncertainty"), bool):
+        raise ValueError(f"test_stage_uncertainty must be boolean for {identity}")
+
+    counterevidence = stage.get("counterevidence")
+    if not isinstance(counterevidence, list):
+        raise ValueError(f"counterevidence must be a list for {identity}")
+    for item in counterevidence:
+        if not isinstance(item, dict):
+            raise ValueError(f"counterevidence entry must be an object for {identity}")
+        if not re.match(r"https?://", item.get("source_url", "")):
+            raise ValueError(f"counterevidence needs a source URL for {identity}")
+        if not item.get("detail", "").strip():
+            raise ValueError(f"counterevidence needs a concrete detail for {identity}")
+    return stage
+
+
 def validate_candidate_ledger(ledger: dict) -> None:
-    if ledger.get("schema_version") != 1:
-        raise ValueError("candidate ledger schema_version must be 1")
+    schema_version = ledger.get("schema_version")
+    if schema_version not in {1, 2}:
+        raise ValueError("candidate ledger schema_version must be 1 or 2")
     if ledger.get("scan_profile", "").strip().lower() != "4x-slg-strict-v1":
         raise ValueError("candidate ledger must use 4X-SLG-STRICT-v1")
     candidates = ledger.get("candidates")
@@ -122,10 +183,24 @@ def validate_candidate_ledger(ledger: dict) -> None:
         pillars = candidate.get("pillars") or {}
         statuses = {key: _status(pillars, key) for key in PILLAR_KEYS}
         videos = candidate.get("videos") or []
+        evidence_stage = (
+            _validate_evidence_stage(candidate, identity)
+            if schema_version == 2
+            else None
+        )
 
-        for observation in candidate.get("store_observations") or []:
+        # The same evidence rules apply everywhere, independently of the focus
+        # configuration. Multiple known packages/URLs can represent linked editions.
+        declared = {_listing_id(url) for url in candidate.get("store_urls") or []}
+        declared.discard(None)
+        for pid in candidate.get("package_ids") or []:
+            declared.add(("app_store" if pid.isdigit() else "google_play", pid))
+        observations = candidate.get("store_observations") or []
+        if classification == "Product Lead" and not observations:
+            raise ValueError(f"Product Lead needs a first-party regional store observation: {identity}")
+        for observation in observations:
             country = observation.get("country")
-            if country not in TARGET_COUNTRY_CODES:
+            if not is_market_code(country):
                 raise ValueError(f"unsupported product-radar country: {country!r}")
             if observation.get("availability") not in {
                 "pre_registration",
@@ -134,19 +209,20 @@ def validate_candidate_ledger(ledger: dict) -> None:
                 "unknown",
             }:
                 raise ValueError(f"invalid store availability for {country}")
-            region_source = observation.get("region_source_url", "")
-            if observation.get("region_verified") is not True or not _is_localized_store_url(
-                region_source, country
-            ):
+            listing = _listing_id(observation.get("region_source_url"), country)
+            if (observation.get("region_verified") is not True or not listing
+                    or _listing_id(observation.get("store_url")) != listing):
                 raise ValueError(
                     f"store observation lacks localized region evidence: {country}"
                 )
-            if not observation.get("observed_at") or not observation.get("store_url"):
+            if any(platform == listing[0] for platform, _ in declared) and listing not in declared:
+                raise ValueError(f"store observation product ID mismatch: {country}")
+            if not observation.get("observed_at"):
                 raise ValueError(f"store observation is incomplete: {country}")
 
         for video in videos:
             url = video.get("url", "")
-            if not re.match(r"https?://(?:www\.)?youtube\.com/watch\?v=", url):
+            if not youtube_video_id(url):
                 raise ValueError(f"candidate video is not a direct YouTube source: {url!r}")
             quality = video.get("evidence_quality", 3)
             if not isinstance(quality, int) or not 1 <= quality <= 5:
@@ -167,16 +243,35 @@ def validate_candidate_ledger(ledger: dict) -> None:
                 )
             if not videos:
                 raise ValueError(f"Core candidate has no YouTube evidence: {identity}")
+            if evidence_stage and evidence_stage["world_map_unlock_status"] not in {
+                "shown",
+                "known_later",
+            }:
+                raise ValueError(
+                    f"Core requires positive world-map unlock evidence: {identity}"
+                )
         elif classification == "Pending":
             if not candidate.get("missing_pillars"):
                 raise ValueError(f"Pending candidate must name missing pillars: {identity}")
             if not videos:
                 raise ValueError(f"Pending candidate has no YouTube evidence: {identity}")
-        elif classification == "Reject" and not candidate.get("recheck_condition"):
-            raise ValueError(f"Reject candidate must name a recheck condition: {identity}")
+        elif classification == "Reject":
+            if not candidate.get("recheck_condition"):
+                raise ValueError(f"Reject candidate must name a recheck condition: {identity}")
+            if schema_version == 2:
+                counterevidence = evidence_stage["counterevidence"]
+                if evidence_stage["test_stage_uncertainty"] and not counterevidence:
+                    raise ValueError(
+                        "test-stage uncertainty cannot be rejected from absence alone: "
+                        f"{identity}"
+                    )
+                if not counterevidence:
+                    raise ValueError(
+                        f"schema v2 Reject requires explicit counterevidence: {identity}"
+                    )
 
 
-def validate_product_radar_run(ledger: dict) -> None:
+def validate_product_radar_run(ledger: dict, expected_markets=None) -> None:
     run = ledger.get("product_radar_run")
     if not isinstance(run, dict):
         raise ValueError("candidate ledger has no product_radar_run")
@@ -185,11 +280,16 @@ def validate_product_radar_run(ledger: dict) -> None:
     countries = run.get("countries")
     if not isinstance(countries, list):
         raise ValueError("product-radar countries must be a list")
-    codes = [item.get("code") for item in countries if isinstance(item, dict)]
-    if set(codes) != set(TARGET_COUNTRY_CODES) or len(codes) != len(TARGET_COUNTRY_CODES):
-        raise ValueError(
-            "product_radar_run must account for exactly MY, ID, PH, GB, TH, CA"
-        )
+    if any(not isinstance(item, dict) for item in countries):
+        raise ValueError("each product-radar country must be an object")
+    expected = validate_markets(expected_markets if expected_markets is not None
+                                else run.get("focus_markets", DEFAULT_MARKETS))
+    if "focus_markets" in run and set(validate_markets(run["focus_markets"])) != set(expected):
+        raise ValueError("product_radar_run focus_markets differs from the run manifest")
+    codes = [item.get("code") for item in countries]
+    if (not all(is_market_code(c) for c in codes)
+            or set(codes) != set(expected) or len(codes) != len(expected)):
+        raise ValueError("product_radar_run must account for exactly " + ", ".join(expected))
     statuses = []
     for item in countries:
         if item.get("status") not in {"checked", "failed", "not_run"}:
@@ -200,9 +300,13 @@ def validate_product_radar_run(ledger: dict) -> None:
             raise ValueError(f"source_urls must be a list for {item.get('code')}")
         if item.get("status") == "checked":
             source_urls = item.get("source_urls") or []
-            if not any(_is_localized_store_url(url, item["code"]) for url in source_urls):
+            if not any(
+                _is_localized_google_play_url(url, item["code"])
+                for url in source_urls
+            ):
                 raise ValueError(
-                    f"checked product-radar country has no localized source URL: {item.get('code')}"
+                    "checked product-radar country has no localized Google Play "
+                    f"source URL: {item.get('code')}"
                 )
         statuses.append(item.get("status"))
     if run.get("status") == "complete" and any(status != "checked" for status in statuses):
@@ -235,9 +339,9 @@ def validate_report_candidates(report_games: List[dict], ledger: dict) -> None:
             raise ValueError(
                 f"{candidate['classification']} cannot be published: {game.get('name')}"
             )
-        ledger_urls = {video["url"] for video in candidate.get("videos") or []}
-        report_urls = {video.get("url") for video in game.get("videos") or [] if video.get("url")}
-        if not report_urls or not report_urls.issubset(ledger_urls):
+        ledger_ids = {youtube_video_id(video["url"]) for video in candidate.get("videos") or []}
+        report_ids = {youtube_video_id(video.get("url")) for video in game.get("videos") or []}
+        if not report_ids or None in report_ids or not report_ids.issubset(ledger_ids):
             raise ValueError(
                 f"report video not present in candidate ledger: {game.get('name')}"
             )
@@ -281,6 +385,7 @@ def _candidate_channel_facts(candidate: dict) -> Dict[str, dict]:
         video
         for video in videos
         if video.get("time_precision") == "exact" and video.get("published")
+        and video.get("time_status") != "unverified"
     ]
     earliest = min((video["published"] for video in exact), default=None)
     facts = {}
@@ -297,14 +402,20 @@ def _candidate_channel_facts(candidate: dict) -> Dict[str, dict]:
                 "urls": [],
             },
         )
-        if earliest and video.get("published") == earliest:
+        if earliest and video in exact and video.get("published") == earliest:
             item["lead"] = True
         item["evidence_quality"].append(video.get("evidence_quality", 3))
         item["urls"].append(video.get("url", ""))
     return facts
 
 
-def update_channel_intelligence(channels: dict, ledger: dict, event_date: str) -> dict:
+def update_channel_intelligence(
+    channels: dict,
+    ledger: dict,
+    event_date: str,
+    *,
+    replace_candidate_day: bool = False,
+) -> dict:
     """Update channel intelligence without reading store/country observations."""
     validate_candidate_ledger(ledger)
     updated = deepcopy(channels)
@@ -322,22 +433,37 @@ def update_channel_intelligence(channels: dict, ledger: dict, event_date: str) -
                 continue
             _, channel = channel_map[channel_id]
             history = channel.setdefault("intelligence_events", [])
+            if replace_candidate_day:
+                history[:] = [
+                    item
+                    for item in history
+                    if not (
+                        item.get("candidate_id") == identity
+                        and item.get("date") == event_date
+                    )
+                ]
             event_id = f"{identity}|{event_date}|{'|'.join(sorted(facts['urls']))}"
-            if any(item.get("event_id") == event_id for item in history):
-                continue
-            history.append(
-                {
-                    "event_id": event_id,
-                    "date": event_date,
-                    "candidate_id": identity,
-                    "classification": candidate["classification"],
-                    "lead": facts["lead"],
-                    "unique": facts["unique"],
-                    "evidence_quality": round(
-                        sum(facts["evidence_quality"]) / len(facts["evidence_quality"]), 2
-                    ),
-                }
+            event = {
+                "event_id": event_id,
+                "date": event_date,
+                "candidate_id": identity,
+                "classification": candidate["classification"],
+                "lead": facts["lead"],
+                "unique": facts["unique"],
+                "evidence_quality": round(
+                    sum(facts["evidence_quality"]) / len(facts["evidence_quality"]), 2
+                ),
+            }
+            existing_event = next(
+                (item for item in history if item.get("event_id") == event_id),
+                None,
             )
+            if existing_event is None:
+                history.append(event)
+            else:
+                # A same-day deep rerun may correct an evidence-stage judgment.
+                # Replace the event facts instead of freezing the first verdict.
+                existing_event.update(event)
 
     event_day = _event_date(event_date)
     ninety_day_cutoff = event_day - timedelta(days=89)
@@ -417,6 +543,7 @@ def apply_source_health(channels: dict, collection: dict, event_date: str) -> di
             "checked_at": event_date,
             "rss_status": result.get("rss_status"),
             "page_status": result.get("page_status"),
+            **({"fetch_tier": result["fetch_tier"]} if result.get("fetch_tier") else {}),
         }
     return updated
 
@@ -441,43 +568,49 @@ def update_candidate_history(state: dict, ledger: dict, event_date: str) -> dict
                 "store_urls": candidate.get("store_urls", []),
                 "classification": candidate.get("classification"),
                 "pillars": candidate.get("pillars", {}),
+                "evidence_stage": candidate.get("evidence_stage", {}),
                 "missing_pillars": candidate.get("missing_pillars", []),
                 "recheck_condition": candidate.get("recheck_condition", ""),
                 "last_reviewed": event_date,
             }
         )
         existing.setdefault("first_reviewed", event_date)
+        pending = dict.fromkeys(existing.get("pending_video_ids", []))
+        for video in candidate.get("videos", []):
+            vid = youtube_video_id(video.get("url"))
+            if not vid:
+                continue
+            if candidate["classification"] in {"Core", "Pending"} and video.get("time_status") == "unverified":
+                pending[vid] = None
+            elif video.get("time_status") == "verified" or (
+                video.get("time_precision") == "exact" and video.get("published")
+            ):
+                pending.pop(vid, None)
+        if pending or "pending_video_ids" in existing:
+            existing["pending_video_ids"] = list(pending)[-32:]
     updated["last_updated"] = event_date
     updated.setdefault("schema_version", 1)
     return updated
 
 
-def update_product_radar(state: dict, ledger: dict, event_date: str) -> dict:
+def update_product_radar(state: dict, ledger: dict, event_date: str, expected_markets=None) -> dict:
     validate_candidate_ledger(ledger)
-    validate_product_radar_run(ledger)
+    validate_product_radar_run(ledger, expected_markets)
+    run = ledger["product_radar_run"]
+    focus = validate_markets(expected_markets if expected_markets is not None
+                             else run.get("focus_markets", DEFAULT_MARKETS))
     updated = deepcopy(state) if state else new_product_radar_state()
     country_map = {item["code"]: item for item in updated.get("countries", [])}
-    if tuple(country_map) != TARGET_COUNTRY_CODES:
-        defaults = new_product_radar_state()
-        country_map = {item["code"]: item for item in defaults["countries"]}
-        updated["countries"] = list(country_map.values())
+    observed = [row["country"] for c in ledger["candidates"] for row in c.get("store_observations") or []]
+    for code in (*focus, *observed):
+        if code not in country_map:
+            country_map[code] = _market_record(code, code in focus)
     for country in country_map.values():
+        country["enabled"] = country["code"] in focus
         metrics = country.setdefault("metrics", {})
-        for key, default in (
-            ("last_checked_at", None),
-            ("last_run_status", None),
-            ("runs_checked", 0),
-            ("runs_failed", 0),
-            ("runs_not_run", 0),
-            ("observations", 0),
-            ("new_listings", 0),
-            ("product_leads", 0),
-            ("core_pending_conversions", 0),
-            ("youtube_reverse_lookup_successes", 0),
-        ):
+        for key, default in _market_record(country["code"], country["enabled"])["metrics"].items():
             metrics.setdefault(key, default)
-
-    run = ledger["product_radar_run"]
+    updated["countries"] = list(country_map.values())
     run_signature = "|".join(
         f"{item['code']}:{item['status']}" for item in run["countries"]
     )
@@ -490,6 +623,7 @@ def update_product_radar(state: dict, ledger: dict, event_date: str) -> dict:
                 "date": event_date,
                 "status": run["status"],
                 "ended_at": run.get("ended_at") or event_date,
+                "focus_markets": list(focus),
                 "countries": deepcopy(run["countries"]),
             }
         )
@@ -526,7 +660,7 @@ def update_product_radar(state: dict, ledger: dict, event_date: str) -> dict:
                 product.setdefault("observations", []).append(observation)
                 existing_observations.add(key)
                 metrics = country_map[observation["country"]]["metrics"]
-                metrics["last_checked_at"] = observation.get("observed_at") or event_date
+                metrics["last_observed_at"] = observation.get("observed_at") or event_date
                 metrics["observations"] += 1
                 if observation.get("availability") in {"available", "pre_registration"}:
                     metrics["new_listings"] += 1

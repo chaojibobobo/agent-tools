@@ -1,8 +1,8 @@
 # Game Scan YouTube
 
-面向移动 4X SLG 早期情报的双雷达 skill：动态频道池负责发现一手 YouTube 实机，独立产品雷达负责监测马来西亚、印度尼西亚、菲律宾、英国、泰国、加拿大的早期测试上架。两路信号汇合后经过结构化 `4X-SLG-STRICT-v1` 门禁，再生成报告并推送飞书。
+发现处于早期测试的移动 4X SLG。YouTube 频道雷达找一手实机，不按国家筛选；商店雷达定期巡检可配置的重点市场，也接收其他地区有一手证据的上架线索。只有实机通过 `4X-SLG-STRICT-v1` 品类校验，才可列为确认新品。
 
-频道权重只评价严格4X命中、领先发现、独有发现和视频证据质量；目标国家覆盖不影响频道权重。RSS/频道页可用性单独记录为 `source_health`。
+频道权重只评价严格 4X 命中、领先发现、独有发现和视频证据质量；目标国家覆盖不影响频道权重。频道可达性与本轮覆盖单独记录为 `source_health`。遇到断网或覆盖不足，运行器保留游标、只发运维告警，下次重采。配置、字段和离线演练见[运行手册](docs/operations.md)。
 
 本目录从 Claude Code 真源迁入，已适配 Codex；核心筛选逻辑、历史报告和持续状态均保留。
 
@@ -16,8 +16,12 @@ game-scan-youtube/
 ├── scripts/
 │   ├── init_workspace.sh
 │   ├── collect_rss.py
+│   ├── youtube_transport.py
+│   ├── run_health.py
+│   ├── signal_funnel.py
 │   ├── prepare_product_radar.py
 │   ├── intelligence_state.py
+│   ├── market_scope.py
 │   ├── validate_run.py
 │   ├── commit_state.py
 │   ├── run_scan.sh
@@ -37,11 +41,11 @@ game-scan-youtube/
 
 新运行会产生：
 
-- `scan-input-YYYY-MM-DD.json`：游标感知的 RSS + 频道页降级证据。
-- `product-radar-input-YYYY-MM-DD.json`：六国独立搜索任务。
+- `scan-input-YYYY-MM-DD.json`：L0 探针、分层覆盖、视频时间精度与运行状态。
+- `product-radar-input-YYYY-MM-DD.json`：本轮重点市场清单与各区的独立搜索任务。
 - `candidate-ledger-YYYY-MM-DD.json`：Core / Pending / Reject / Product Lead 的结构化判断账本。
 - `candidate_history.json`：含 Reject 在内的长期判断记忆。
-- `product_radar.json`：六国 checked / failed / not-run 覆盖、去重后的产品观察与 YouTube 转换指标。
+- `product_radar.json`：重点市场巡检状态（`checked` / `failed` / `not_run`）、各地区去重后的上架观察及其后续实机线索。
 - `scan_state.json`：仅成功提交后推进的扫描游标。
 
 ## 安装到 Codex
@@ -82,12 +86,26 @@ export GAME_SCAN_WORK_DIR=/path/to/workspace
 
 初始化只补缺失文件，不覆盖已有报告或状态。
 
+## 商店雷达查哪些市场？
+
+默认重点市场是马来西亚、印度尼西亚、菲律宾、英国、泰国和加拿大。**重点名单决定每轮主动查哪里，不决定哪里发现的游戏能入账。**
+
+在持续工作区新建 `radar-markets.json` 可长期增减：写入**完整替换名单**，至少保留一个市场，使用不重复的两字母地区代码。例如，今后只巡检马来西亚、菲律宾和日本：
+
+```json
+{"focus_markets": ["MY", "PH", "JP"]}
+```
+
+只改一次，可给 `run_scan.sh` 或生成清单的 `prepare_product_radar.py` 加 `--markets JP,GB`。命令行优先于工作区配置，不改配置文件；两者都不设置才使用默认名单。
+
+例如，若本轮只巡检日本和英国，却发现美国区 Google Play 的具体游戏详情页：核实包名、地区和可用状态后，可记录美国区上架观察，但不把美国计入本轮巡检覆盖，也不会自动加入下轮名单。只有商店证据、尚无一手实机时，留作 `Product Lead`；国家和地区不参与 YouTube 频道评分。
+
 ## 使用
 
 交互使用时，可以直接告诉 Codex：
 
 ```text
-运行 game-scan-youtube，扫描今天的新移动 4X SLG 视频与六国新品信号。
+运行 game-scan-youtube，扫描今天的新移动 4X SLG 实机，并巡检我配置的重点市场。
 ```
 
 交互式手动扫描由当前 Codex 直接按 skill 阶段执行，不再启动嵌套的 `codex exec`。只有明确需要非交互 runner 时才使用下面脚本；它会先在父进程采集 RSS，再让独立 agent 分析本地证据：
@@ -150,7 +168,7 @@ python3 skills/game-scan-youtube/scripts/push_feishu.py \
 → 观察与更新（数量优先）
 ```
 
-聊天卡片正常正文控制在约 500 个中文字符、15 行以内。标题直接回答“今天值不值得看”，并用颜色与标签强化必看、补充和观察数量。本地 Markdown 继续保留完整证据。
+聊天卡片可见文案硬限 500 字、15 行。标题先给结论，观察与更新最多两行；本地 Markdown 保留完整依据和逐款原片。达到历史报告预算上限时，dry-run 会标明只读原视频索引，而非可发送卡片。
 
 每一款确认新增游戏都必须把对应的一手 YouTube 视频链接传递到飞书：必看项目显示 `YouTube 原视频` 按钮，补充项目在同一行显示独立的 `YouTube 原视频` 链接，紧凑 post fallback 也保持相同映射。任一确认新增游戏缺少合法 YouTube 视频 URL 时，渲染会直接失败并报告游戏名，不允许静默发送无源结论，也不能只用商店链接代替视频源。
 
@@ -171,6 +189,8 @@ skills/game-scan-youtube/scripts/run_daily_once.sh
 - 当日报告存在、非空且可解析。
 - `channels.json` 与 `seen_games.json` 是有效 JSON。
 - 真实飞书发送生成 `receipts/YYYY-MM-DD.feishu.json`，其中包含 `message_id`。
+
+触发 `RUN_DEGRADED` 熔断时，只发运维告警（无飞书凭据则只留本地记录），不发日报、不推进扫描游标，也不写入 `.run-stamps` 完成戳。下次定时任务再执行该日期时会重新采集。
 
 手动排查时按以下顺序：
 
@@ -208,12 +228,14 @@ python3 skills/game-scan-youtube/scripts/validate_run.py \
 - Codex CLI；可选 Claude Code CLI。
 - Python 3.9+。
 - `curl`。
+- `yt-dlp`（可选，推荐安装）：RSS 被限流或超时时用于读取频道上传列表。若装在自定义位置，可在环境变量或工作区 `.env` 中设置 `YTDLP_BIN` 为可执行文件的绝对路径。
+- `YOUTUBE_API_KEY`（可选）：配置后优先启用 L1 官方上传列表通道（`playlistItems.list`）；不配置则从 RSS 开始采集。
 - 若要推送飞书，需要具备 IM 发消息权限的 Feishu/Lark 应用。
 
 ## 已知边界
 
-- YouTube RSS、页面抓取和搜索源都可能出现 `403`、`429` 或 `5xx`；RSS 失败会自动尝试频道页，频道页相对时间不得冒充准确上传时间。
-- 六国上架判断必须来自带 `gl=国家码` / `country=国家码` 的本地化商店源；普通搜索摘要只能发现线索，不能证明区域可用。
+- 有 Key 优先上传列表 API；RSS 失败按条件退到本机 yt-dlp，再到频道页，相对时间不得冒充准确上传时间。L0 失败、有效或优先频道覆盖未达阈值时停止常规日报闭环。
+- 重点市场覆盖优先看当地 Google Play，Apple 用于核对 iOS 和日期。非重点地区要有能指向同款游戏、同一地区的官方商店商品证据；搜索结果、转载或其他地区的页面不能证明该区上架。
 - 连续失败时要降级并明确报告证据缺口，不要循环重试，也不要把 cron 启动当成扫描完成。
 - `seen_games.json` 是去重真源；未确认的新视频不得写成已验证发现。
 - 嵌套 Codex/Claude 不假设具备网络；RSS 必须先落成本地 `scan-input-*.json`。

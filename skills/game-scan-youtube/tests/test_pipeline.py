@@ -149,21 +149,21 @@ class DecisionCardModelTests(unittest.TestCase):
     def test_model_answers_value_then_priority(self):
         model = self.card.build_decision_model(decision_fixture())
 
-        self.assertEqual("今日值得看｜Explicit Focus", model["headline"])
+        self.assertEqual("【值得看】1款必看，3 频道同时覆盖", model["headline"])
         self.assertEqual(["Explicit Focus"], [g["name"] for g in model["focus"]])
         self.assertEqual(
             ["Implicit Focus", "Track Game"],
             [g["name"] for g in model["supplemental"]],
         )
         self.assertEqual("1 必看 · 2 补充 · 1 观察 · 1 更新", model["counts"])
-        self.assertLessEqual(len(model["conclusion"]), 80)
-        self.assertLessEqual(len(model["trend"]), 60)
+        self.assertLessEqual(len(model["conclusion"]), 25)
+        self.assertLessEqual(len(model["trend"]), 35)
 
-    def test_focus_evidence_prefers_cross_channel_and_duration(self):
+    def test_focus_evidence_names_only_the_strongest_signal(self):
         model = self.card.build_decision_model(decision_fixture())
         focus = model["focus"][0]
 
-        self.assertEqual("3 频道同时覆盖 · 3 条视频全部 ≥10 分钟", focus["why"])
+        self.assertEqual("3 频道同时覆盖", focus["why"])
         self.assertEqual("Roguelike TD → 轻基地扩展局外成长", focus["mechanism"])
 
     def test_two_explicit_focus_games_expand_but_never_more_than_two(self):
@@ -185,7 +185,7 @@ class DecisionCardRenderingTests(unittest.TestCase):
     def setUpClass(cls):
         cls.card = load_script_module("decision_card")
 
-    def test_interactive_card_has_decision_header_tags_and_actions(self):
+    def test_interactive_card_has_decision_header_counts_and_actions(self):
         card = self.card.build_interactive_card(
             date(2026, 7, 27),
             decision_fixture(),
@@ -201,19 +201,16 @@ class DecisionCardRenderingTests(unittest.TestCase):
 
         self.assertEqual("orange", header["template"])
         self.assertEqual(
-            "今日值得看｜Explicit Focus",
+            "【值得看】1款必看，3 频道同时覆盖",
             header["title"]["content"],
         )
-        self.assertEqual(
-            ["1 必看", "2 补充", "1 观察"],
-            [tag["text"]["content"] for tag in header["text_tag_list"]],
-        )
+        self.assertIn("观察 1｜时间存疑 0｜改名/更新 1", text)
         self.assertIn("🔥 必看｜Explicit Focus", text)
         self.assertIn("为什么看：", text)
         self.assertIn("核心机制：", text)
         self.assertNotIn("low gameplay detail should be compacted", text)
         self.assertLessEqual(len(text), 500)
-        self.assertLessEqual(len(text.splitlines()), 20)
+        self.assertLessEqual(len(text.splitlines()), 15)
 
         actions = [
             element
@@ -224,6 +221,8 @@ class DecisionCardRenderingTests(unittest.TestCase):
             "YouTube 原视频",
             actions[0]["actions"][0]["text"]["content"],
         )
+        self.assertEqual("看商店", actions[0]["actions"][1]["text"]["content"])
+        self.assertEqual("https://play.google.com/fixture", actions[0]["actions"][1]["url"])
 
     def test_interactive_card_links_every_confirmed_new_game_to_youtube(self):
         """Catches supplemental discoveries losing their first-hand video source."""
@@ -324,10 +323,8 @@ class DecisionCardRenderingTests(unittest.TestCase):
         text = self.card.visible_card_text(card)
         payload = json.dumps(card, ensure_ascii=False)
 
-        self.assertIn("⚪ 观察", text)
-        self.assertIn("Watch Candidate｜YouTube 原视频", text)
-        self.assertIn("↻ 更新", text)
-        self.assertIn("Known Game｜YouTube 原视频", text)
+        self.assertIn("观察 1｜时间存疑 0｜改名/更新 1", text)
+        self.assertIn("观察：Watch Candidate；更新：Known Game", text)
         self.assertIn("https://www.youtube.com/watch?v=watch-source", payload)
         self.assertIn("https://www.youtube.com/watch?v=update-source", payload)
 
@@ -405,8 +402,8 @@ class DecisionCardRenderingTests(unittest.TestCase):
         text = self.card.visible_post_text(post)
         payload = json.dumps(post, ensure_ascii=False)
 
-        self.assertIn("⚪ 观察｜Watch Candidate｜YouTube 原视频", text)
-        self.assertIn("↻ 更新｜Known Game｜YouTube 原视频", text)
+        self.assertIn("观察 1｜时间存疑 0｜改名/更新 1", text)
+        self.assertIn("观察：Watch Candidate；更新：Known Game", text)
         self.assertIn("https://www.youtube.com/watch?v=watch-source", payload)
         self.assertIn("https://www.youtube.com/watch?v=update-source", payload)
 
@@ -442,10 +439,11 @@ class DecisionCardRenderingTests(unittest.TestCase):
 
         self.assertEqual("grey", card["header"]["template"])
         self.assertEqual(
-            "今日无重点｜Quiet Day",
+            "【今日可跳过】本轮未见新增",
             card["header"]["title"]["content"],
         )
         self.assertNotIn("必看", self.card.visible_card_text(card))
+        self.assertIn("近7日记录 3 款新游戏", self.card.visible_card_text(card))
 
     def test_compact_post_matches_card_hierarchy_and_budget(self):
         post = self.card.build_compact_post(
@@ -460,11 +458,11 @@ class DecisionCardRenderingTests(unittest.TestCase):
         )
         text = self.card.visible_post_text(post)
 
-        self.assertIn("结论｜", text)
+        self.assertTrue(text.startswith("【值得看】"))
         self.assertIn("🔥 必看｜Explicit Focus", text)
-        self.assertIn("为什么看｜", text)
-        self.assertIn("核心机制｜", text)
-        self.assertIn("➕ 补充｜", text)
+        self.assertIn("为什么看：", text)
+        self.assertIn("核心机制：", text)
+        self.assertIn("补充｜", text)
         self.assertIn("趋势｜", text)
         self.assertNotIn("low gameplay detail should be compacted", text)
         self.assertLessEqual(len(text), 500)
@@ -716,20 +714,22 @@ class FeishuExpressionTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "今日值得看｜High Signal",
+            "【值得看】High Signal：4 频道同时覆盖",
             title,
         )
-        self.assertLess(text.index("结论｜"), text.index("🔥 必看｜High Signal"))
+        self.assertTrue(text.startswith("🔥 必看｜High Signal"))
         self.assertLess(
             text.index("🔥 必看｜High Signal"),
-            text.index("➕ 补充｜Low Signal"),
+            text.index("补充｜Low Signal"),
         )
-        self.assertIn("为什么看｜4 频道同时覆盖", text)
-        self.assertIn("核心机制｜4-channel launch", text)
+        self.assertIn("为什么看：4 频道同时覆盖", text)
+        self.assertIn("核心机制：4-channel launch", text)
         self.assertNotIn("high gameplay detail", text)
         self.assertNotIn("low gameplay detail should be compacted", text)
-        self.assertIn("⚪ 观察｜Watch Candidate", text)
-        self.assertIn("↻ 更新｜Known Game", text)
+        self.assertIn("观察：", text)
+        self.assertIn("更新：", text)
+        self.assertIn("Watch Candidate", text)
+        self.assertIn("Known Game", text)
         self.assertLessEqual(len(text), 500)
         self.assertLessEqual(len(text.splitlines()), 15)
 
@@ -973,6 +973,15 @@ class CompletionGateTests(unittest.TestCase):
             env = os.environ.copy()
             env["PATH"] = f"{fake_bin}:{env['PATH']}"
             env["GAME_SCAN_ENV_FILE"] = str(root / "missing.env")
+            # Reach the completion gate without depending on YouTube, the local
+            # network, or any machine-specific proxy/notification settings.
+            fake_collector = fake_bin / "collect.py"
+            fake_collector.write_text(
+                "import json,sys,pathlib\n"
+                "pathlib.Path(sys.argv[sys.argv.index('--output')+1]).write_text("
+                "json.dumps({'source_summary':{'status':'complete'}}))\n"
+            )
+            env["GAME_SCAN_COLLECTOR"] = str(fake_collector)
             result = subprocess.run(
                 [
                     str(SCRIPTS_DIR / "run_daily_once.sh"),

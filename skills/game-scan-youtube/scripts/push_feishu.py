@@ -27,6 +27,12 @@ from decision_card import (
     validate_4x_profile,
     visible_card_text,
 )
+import decision_card
+import intelligence_state
+from market_scope import expected_run_markets
+from run_health import health_banner, is_degraded
+from signal_funnel import prepare_report
+from youtube_transport import load_env as load_scan_env
 
 BASE_URL = "https://open.feishu.cn/open-apis"
 
@@ -46,23 +52,9 @@ def post_json(url: str, payload: dict, headers: Optional[dict] = None, query: Op
         return json.loads(response.read().decode("utf-8"))
 
 
-def load_env(env_path: Optional[Path] = None):
-    """Load credentials from .env file and/or environment variables."""
-    if env_path and env_path.exists():
-        for line in env_path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, val = line.partition("=")
-            os.environ.setdefault(key.strip(), val.strip())
-
-    missing = []
-    for key in ("FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_USER_OPEN_ID"):
-        if not os.environ.get(key):
-            missing.append(key)
-    if missing:
-        print(f"Missing env vars: {', '.join(missing)}")
-        sys.exit(1)
+def missing_credentials():
+    return [key for key in ("FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_USER_OPEN_ID")
+            if not os.environ.get(key)]
 
 
 def get_token() -> str:
@@ -81,7 +73,10 @@ def get_token() -> str:
 def parse_report(report_path: Path) -> dict:
     """Parse a daily markdown report into structured data."""
     text = report_path.read_text()
+    if any(line.lstrip(" >#*").startswith("【数据降级：") for line in text.splitlines()[:6]):
+        raise ValueError("RUN_DEGRADED：带降级标记的报告不是正常日报")
     result = {
+        "report_date": report_path.stem,
         "is_quiet": False,
         "scan_profile": "",
         "games": [],
@@ -112,6 +107,15 @@ def parse_report(report_path: Path) -> dict:
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
+        if line.startswith(">"):
+            meta = re.fullmatch(r">\s*\*\*(Card Headline|Card Trend|Trend Products):\*\*\s*(.*)", line, re.I)
+            if meta:
+                key = meta[1].lower().replace(" ", "_")
+                if key in result:
+                    raise ValueError(f"duplicate report field: {meta[1]}")
+                val = meta[2].strip()
+                result[key] = [x.strip() for x in val.split("｜") if x.strip()] if key == "trend_products" else val
+                continue
         if line.startswith(">") and "scan profile" in line.lower():
             profile_line = re.sub(r"[*_`]", "", line.lstrip("> "))
             _, separator, profile = profile_line.partition(":")
@@ -122,7 +126,9 @@ def parse_report(report_path: Path) -> dict:
         if line.startswith("## "):
             finish_game()
             heading = re.sub(r"\s*\([^)]*\)\s*$", "", line[3:]).strip().lower()
-            if heading.startswith("watchlist"):
+            if heading in {"待核实发现（时间存疑）", "待核实发现", "unverified discoveries"}:
+                section_kind = "unverified"
+            elif heading.startswith("watchlist"):
                 section_kind = "watchlist"
             elif any(heading.startswith(label) for label in new_sections):
                 section_kind = "new"
@@ -136,11 +142,12 @@ def parse_report(report_path: Path) -> dict:
                 section_kind = None
             continue
 
-        if line.startswith("### ") and section_kind in {"new", "update", "watchlist"}:
+        if line.startswith("### ") and section_kind in {"new", "update", "watchlist", "unverified"}:
             finish_game()
             header = re.sub(r"^\d+\.\s*", "", line[4:].strip())
+            upload_label = ""
             if "|" in header:
-                header = header.split("|", 1)[1].strip()
+                upload_label, header = (part.strip() for part in header.split("|", 1))
 
             is_update = section_kind == "update"
             if is_update:
@@ -164,7 +171,9 @@ def parse_report(report_path: Path) -> dict:
                 "name": game_name,
                 "hook": hook,
                 "is_update": is_update,
-                "is_watchlist": section_kind == "watchlist",
+                "upload_label": upload_label,
+                "is_watchlist": section_kind in {"watchlist", "unverified"},
+                "is_time_unverified": section_kind == "unverified",
                 "videos": [],
                 "status": "",
                 "developer": "",
@@ -227,6 +236,11 @@ def parse_report(report_path: Path) -> dict:
                     "package_id": "package_id",
                     "package": "package_id",
                     "aliases": "aliases",
+                    "time_status": "time_status",
+                    "card_evidence": "card_evidence",
+                    "card_mechanism": "card_mechanism",
+                    "card_form": "card_form",
+                    "card_signal": "card_signal",
                 }
                 mapped = field_map.get(key)
                 if mapped:
@@ -237,6 +251,8 @@ def parse_report(report_path: Path) -> dict:
                             if item.strip()
                         ]
                     else:
+                        if mapped.startswith("card_") and mapped in current_game:
+                            raise ValueError(f"duplicate {mapped} for {current_game['name']}")
                         current_game[mapped] = val
 
         # Historical update summaries can be tables rather than H3 blocks.
@@ -295,7 +311,7 @@ def build_7day_summary(seen_games_path: Path, report_date: date, channels_path: 
     """Build 7-day summary from seen_games.json."""
     data = json.loads(seen_games_path.read_text())
     games = data.get("games", {})
-    cutoff = report_date - timedelta(days=7)
+    cutoff = report_date - timedelta(days=6)
 
     total_channels = 0
     if channels_path and channels_path.exists():
@@ -308,7 +324,7 @@ def build_7day_summary(seen_games_path: Path, report_date: date, channels_path: 
         if not first_str:
             continue
         first = datetime.strptime(first_str, "%Y-%m-%d").date()
-        if first >= cutoff:
+        if cutoff <= first <= report_date:
             recent.append({
                 "name": name,
                 "developer": info.get("developer", "Unknown"),
@@ -619,6 +635,28 @@ def write_receipt(work_dir: Path, report_date: str, push_result: dict) -> Path:
     return receipt_path
 
 
+def ops_message(scan: dict) -> str:
+    """Never relay raw exception URLs, proxy names or API keys to IM."""
+    health = scan.get("source_health") or {}
+    reason = str(health.get("degraded_reason", ""))
+    probe_failed = health.get("probe_status") == "failed" or reason.startswith("L0")
+    failures = [r for r in scan.get("channel_results", ()) if r.get("status") == "error"]
+    tiers = [label for label, key in (("L1", "api_error"), ("L2", "rss_error"),
+                                      ("L2.5", "yt_dlp_error"), ("L3", "page_error"))
+             if any(row.get(key) for row in failures)]
+    tier = ("L0 连通性探针失败" if probe_failed
+            else f"{'/'.join(tiers) or 'L1/L2/L2.5/L3'} 频道覆盖不足")
+    remedy = "排查：代理、DNS 与 YouTube 连通性后重跑。" if probe_failed else "排查：API 配额、RSS 限流与 yt-dlp 可用性后重跑。"
+    return "\n".join((health_banner(scan), f"RUN_DEGRADED｜{tier}，游标未推进。", remedy))
+
+
+def preview_payloads(day: str, work_dir: Path, parsed: dict):
+    report_date = date.fromisoformat(day)
+    summary = build_7day_summary(work_dir / "seen_games.json", report_date, work_dir / "channels.json")
+    return (build_interactive_card(report_date, parsed, summary),
+            build_compact_post(report_date, parsed, summary))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Push Game Scout report to Feishu")
     parser.add_argument("--date", required=True, help="Report date (YYYY-MM-DD)")
@@ -631,15 +669,50 @@ def main():
         help="Working directory",
     )
     parser.add_argument("--dry-run", action="store_true", help="Print message without sending")
-    parser.add_argument("--env", default="~/.game-scan-youtube/.env", help="Path to .env file")
+    parser.add_argument("--env", help="Explicit dotenv; otherwise workspace .env, then ~/.game-scan-youtube/.env")
+    parser.add_argument("--ops-alert", action="store_true", help="Require degraded input; never send a daily card")
+    parser.add_argument("--write-incident", action="store_true", help="Save a separate local degradation report")
+    parser.add_argument("--if-configured", action="store_true", help="Skip absent credentials (exit 3), without a receipt")
     args = parser.parse_args()
 
     work_dir = Path(args.dir).expanduser()
-    env_path = Path(args.env).expanduser()
+    env_path = Path(args.env).expanduser() if args.env else None
     report_date = datetime.strptime(args.date, "%Y-%m-%d").date()
 
+    scan_path = work_dir / f"scan-input-{args.date}.json"
+    scan = json.loads(scan_path.read_text()) if scan_path.is_file() else {}
+    degraded = is_degraded(scan)
+    if (args.ops_alert or args.write_incident) and not degraded:
+        raise ValueError("--ops-alert/--write-incident require RUN_DEGRADED scan input")
+    if degraded:
+        alert = ops_message(scan)
+        if args.write_incident:
+            incident = work_dir / f"degraded-{args.date}.md"
+            temp = incident.with_suffix(".md.tmp")
+            temp.write_text(alert + "\n")
+            temp.replace(incident)
+        if args.dry_run:
+            print(alert)
+            return 0
+
     if not args.dry_run:
-        load_env(env_path)
+        load_scan_env(work_dir, env_path)
+        missing = missing_credentials()
+        if missing:
+            if degraded:
+                print(alert)
+            print(f"未发送：缺少 {', '.join(missing)}", file=sys.stderr)
+            return 3 if args.if_configured else 1
+    if degraded:
+        # An operational alert is never a daily delivery receipt or stamp candidate.
+        result = post_json(f"{BASE_URL}/im/v1/messages", {
+            "receive_id": os.environ["FEISHU_USER_OPEN_ID"], "msg_type": "text",
+            "content": json.dumps({"text": alert}, ensure_ascii=False),
+        }, headers={"Authorization": f"Bearer {get_token()}"}, query={"receive_id_type": "open_id"})
+        if result.get("code") != 0 or not (result.get("data") or {}).get("message_id"):
+            raise RuntimeError(f"运维告警未确认送达 (code={result.get('code')})")
+        print("运维告警已发送；未写日报回执。")
+        return 0
 
     report_path = work_dir / f"{args.date}.md"
     if not report_path.exists():
@@ -656,10 +729,32 @@ def main():
         parsed,
         require_strict=report_date >= date(2026, 8, 6),
     )
-    channels_path = work_dir / "channels.json"
-    summary = build_7day_summary(seen_games_path, report_date, channels_path)
-    card_content = build_interactive_card(report_date, parsed, summary)
-    fallback_content = build_compact_post(report_date, parsed, summary)
+    ledger_path = work_dir / f"candidate-ledger-{args.date}.json"
+    ledger = json.loads(ledger_path.read_text()) if ledger_path.is_file() else None
+    has_manifest = (work_dir / f"product-radar-input-{args.date}.json").exists()
+    if has_manifest and ledger is None:
+        raise ValueError("planned market scan is missing its candidate ledger")
+    prepare_report(parsed, scan, ledger, json.loads(seen_games_path.read_text()))
+    if ledger is not None and (has_manifest or "product_radar_run" in ledger
+                               or (parsed.get("card_v3_required") and not args.dry_run)):
+        intelligence_state.validate_product_radar_run(ledger, expected_run_markets(work_dir, args.date))
+    if parsed.get("card_v3_required"):
+        if not args.dry_run and ledger is None:
+            raise ValueError("new full-run delivery requires its candidate ledger")
+        if ledger is not None:
+            intelligence_state.validate_candidate_ledger(ledger)
+            intelligence_state.validate_report_candidates(parsed["games"], ledger)
+    try:
+        card_content, fallback_content = preview_payloads(args.date, work_dir, parsed)
+    except decision_card.CardBudgetError as exc:
+        if (args.dry_run and report_date <= date(2026, 8, 12)
+                and not parsed.get("card_v3_required")
+                and not decision_card.has_card_fields(parsed)):
+            print(decision_card.historical_preview(parsed, exc))
+            return 0
+        raise
+    if not args.dry_run and (work_dir / ".run-locks" / f"{args.date}.needs-collection").exists():
+        raise ValueError("full collection/validation is incomplete; refusing to send a stale daily report")
     push_result = push_report(
         card_content,
         fallback_content,
@@ -672,7 +767,11 @@ def main():
         )
         receipt_path = write_receipt(work_dir, args.date, push_result)
         print(f"Receipt: {receipt_path}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except (OSError, ValueError, RuntimeError) as exc:
+        sys.exit(f"PUSH FAILED: {exc}")

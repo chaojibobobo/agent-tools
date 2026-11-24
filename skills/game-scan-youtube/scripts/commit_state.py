@@ -4,7 +4,6 @@
 import argparse
 import importlib.util
 import json
-import re
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -15,6 +14,9 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import intelligence_state
+from run_health import is_degraded
+from signal_funnel import prepare_report
+from market_scope import expected_run_markets
 
 
 def load_push_module():
@@ -33,7 +35,7 @@ def _write_json_atomic(path: Path, value: dict) -> None:
 
 
 def _normalized_name(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", (value or "").lower())
+    return "".join(c for c in (value or "").casefold() if c.isalnum())
 
 
 def _candidate_for_report_game(report_game: dict, ledger: dict) -> dict:
@@ -46,6 +48,8 @@ def _candidate_for_report_game(report_game: dict, ledger: dict) -> dict:
 
 
 def _existing_game_key(games: dict, candidate: dict) -> str:
+    if candidate.get("renamed_from") in games:
+        return candidate["renamed_from"]
     canonical_name = candidate.get("canonical_name") or "Unknown"
     if canonical_name in games:
         return canonical_name
@@ -76,6 +80,8 @@ def _commit_legacy(date: str, work_dir: Path, parsed: dict) -> dict:
     updated_games = 0
     new_videos = 0
     for report_game in parsed["games"]:
+        if report_game.get("is_time_unverified"):
+            continue
         urls = [video["url"] for video in report_game.get("videos", []) if video.get("url")]
         if not urls:
             continue
@@ -113,6 +119,10 @@ def _commit_legacy(date: str, work_dir: Path, parsed: dict) -> dict:
 
 
 def commit(date: str, work_dir: Path) -> dict:
+    scan_input_path = work_dir / f"scan-input-{date}.json"
+    scan_input = json.loads(scan_input_path.read_text()) if scan_input_path.exists() else {}
+    if is_degraded(scan_input):
+        raise ValueError("RUN_DEGRADED: cursor and dedup state were not changed")
     report_path = work_dir / f"{date}.md"
     push_module = load_push_module()
     parsed = push_module.parse_report(report_path)
@@ -121,27 +131,32 @@ def commit(date: str, work_dir: Path) -> dict:
         require_strict=date >= "2026-08-06",
     )
     ledger_path = work_dir / f"candidate-ledger-{date}.json"
+    seen_path = work_dir / "seen_games.json"
+    seen_state = json.loads(seen_path.read_text())
+    ledger = json.loads(ledger_path.read_text()) if ledger_path.exists() else None
+    prepare_report(parsed, scan_input, ledger, seen_state)
+    if parsed.get("card_v3_required"):
+        # Direct CLI users must not advance the cursor around a failed copy gate.
+        push_module.preview_payloads(date, work_dir, parsed)
     if not ledger_path.exists():
+        if parsed.get("card_v3_required") or (work_dir / f"product-radar-input-{date}.json").exists():
+            raise ValueError("new full-run scan requires a candidate ledger before commit")
         return _commit_legacy(date, work_dir, parsed)
 
-    ledger = json.loads(ledger_path.read_text())
     intelligence_state.validate_candidate_ledger(ledger)
-    intelligence_state.validate_product_radar_run(ledger)
+    markets = expected_run_markets(work_dir, date)
+    intelligence_state.validate_product_radar_run(ledger, markets)
     intelligence_state.validate_report_candidates(parsed["games"], ledger)
 
-    seen_path = work_dir / "seen_games.json"
     channels_path = work_dir / "channels.json"
     history_path = work_dir / "candidate_history.json"
     product_path = work_dir / "product_radar.json"
     scan_state_path = work_dir / "scan_state.json"
-    scan_input_path = work_dir / f"scan-input-{date}.json"
 
-    seen_state = json.loads(seen_path.read_text())
     channels_state = json.loads(channels_path.read_text())
     history_state = json.loads(history_path.read_text())
     product_state = json.loads(product_path.read_text())
     scan_state = json.loads(scan_state_path.read_text())
-    scan_input = json.loads(scan_input_path.read_text())
     if (scan_input.get("source_summary") or {}).get("status") not in {"complete", "degraded"}:
         raise ValueError("cannot commit a blocked or invalid scan input")
 
@@ -151,6 +166,9 @@ def commit(date: str, work_dir: Path) -> dict:
     new_videos = 0
 
     for report_game in parsed["games"]:
+        if report_game.get("is_time_unverified") or (
+                parsed.get("card_v3_required") and report_game.get("is_watchlist")):
+            continue  # Pending evidence remains in candidate_history for re-check.
         urls = [video["url"] for video in report_game.get("videos", []) if video.get("url")]
         if not urls:
             continue
@@ -177,10 +195,13 @@ def commit(date: str, work_dir: Path) -> dict:
             if existing.get("first_seen") != date:
                 updated_games += 1
             new_videos += len(additions)
-        existing["canonical_name"] = candidate.get("canonical_name") or game_key
-        existing["aliases"] = list(
-            dict.fromkeys([*existing.get("aliases", []), *candidate.get("aliases", [])])
-        )
+        renamed = candidate.get("renamed_from")
+        existing["canonical_name"] = game_key if renamed else (candidate.get("canonical_name") or game_key)
+        aliases = [*existing.get("aliases", []), *candidate.get("aliases", [])]
+        if renamed:
+            aliases.append(candidate["canonical_name"])
+            existing["rename_note"] = f"疑似更名/换皮自：{renamed}（依据：{candidate['rename_evidence']}）"
+        existing["aliases"] = list(dict.fromkeys(aliases))
         existing["package_ids"] = list(
             dict.fromkeys([*existing.get("package_ids", []), *candidate.get("package_ids", [])])
         )
@@ -192,7 +213,7 @@ def commit(date: str, work_dir: Path) -> dict:
 
     seen_state["last_updated"] = date
     history_state = intelligence_state.update_candidate_history(history_state, ledger, date)
-    product_state = intelligence_state.update_product_radar(product_state, ledger, date)
+    product_state = intelligence_state.update_product_radar(product_state, ledger, date, markets)
     channels_state = intelligence_state.update_channel_intelligence(channels_state, ledger, date)
     channels_state = intelligence_state.apply_source_health(channels_state, scan_input, date)
     scan_state = deepcopy(scan_state)

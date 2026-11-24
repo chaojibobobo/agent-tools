@@ -65,22 +65,36 @@ class RunnerContractTests(unittest.TestCase):
 
 
 class ProductRadarManifestTests(unittest.TestCase):
-    def test_country_sources_use_real_region_parameters(self):
+    def test_google_play_is_primary_and_apple_is_secondary_for_every_country(self):
         manifest = build_query_manifest("2026-08-11")
 
         for country in manifest["countries"]:
             code = country["code"]
-            endpoints = country["source_endpoints"]
+            primary = country["primary_source"]
+            secondary = country["secondary_sources"]
+            endpoints = primary["source_endpoints"]
+            self.assertEqual("google_play", primary["store"])
             self.assertTrue(
-                any(f"gl={code}" in endpoint for endpoint in endpoints),
-                f"Google Play endpoint is not localized for {code}",
+                all("play.google.com/store/search" in endpoint for endpoint in endpoints),
+                f"Non-Google source leaked into the primary radar for {code}",
             )
             self.assertTrue(
-                any(f"country={code}" in endpoint for endpoint in endpoints),
+                all(f"gl={code}" in endpoint for endpoint in endpoints),
+                f"Google Play endpoint is not localized for {code}",
+            )
+            self.assertEqual(["apple_app_store"], [item["store"] for item in secondary])
+            self.assertTrue(
+                all(
+                    f"country={code}" in endpoint
+                    for item in secondary
+                    for endpoint in item["source_endpoints"]
+                ),
                 f"App Store endpoint is not localized for {code}",
             )
 
         self.assertTrue(manifest["rules"]["does_not_affect_channel_weight"])
+        self.assertEqual("google_play", manifest["rules"]["primary_store"])
+        self.assertTrue(manifest["rules"]["checked_requires_google_play_localized_source"])
 
 
 if __name__ == "__main__":
