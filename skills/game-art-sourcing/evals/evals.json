@@ -1,0 +1,53 @@
+{
+  "skill_name": "game-art-sourcing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "只帮我找《South of Midnight》的官方 press kit、角色图和场景截图，给可直接打开的来源链接即可；不要做完整美术分析，也不要发布飞书。",
+      "expected_output": "保留核心来源摘要并自动追加素材清单；不强制填满五维证据覆盖矩阵，不展开完整 Visual System、AI Prompt 或生产决策卡；不发布飞书。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "完整分析《South of Midnight》的美术风格：角色、场景、材质渲染、UI、VFX、玩家情绪和状态变化都要覆盖，并给出带图片证据的结论。",
+      "expected_output": "保留核心输出并自动组合完整美术分析模块；读取 Visual System 五层框架；用五维证据覆盖矩阵暴露关键 gap，不把固定九章节当成强制模板。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "研究《South of Midnight》，重点不是介绍它，而是为我们当前项目提炼可执行的角色、场景、材质和 VFX 生产规则，标出成本、风险和下一步怎么验证。",
+      "expected_output": "保留核心输出并自动追加项目生产模块；读取 Visual System 五层框架，结论绑定来源与覆盖情况；生成生产决策卡，包含置信度、可转移规则、项目适配、成本风险和最小验证动作。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "把这个 YouTube gameplay 做一次逐帧美术拉片：https://www.youtube.com/watch?v=sY2-8FLGwNY，重点看色彩、镜头、材质、VFX 和 UI，提炼成新项目可复用的规则。",
+      "expected_output": "进入 video-first 子技能；先检查 yt-dlp 与 ffmpeg，再抽取真实关键帧；每条判断绑定时间戳或画面证据；自动追加项目借鉴模块并生成包含最小验证动作的生产决策卡。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "这是我们游戏商城页的一张 UI 截图，只帮我 Review 层级、可读性和多语言风险，不要做竞品素材调研。",
+      "expected_output": "不触发 game-art-sourcing；识别为单张游戏 UI 审查任务并路由到更合适的 game-ui-review 工作流。",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "拆一下《Zombie Cure Lab》的玩法循环、资源产销和中后期数值瓶颈。",
+      "expected_output": "不触发 game-art-sourcing；这是玩法与系统设计拆解，应路由到 game-design 或 systems 相关工作流。",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "分析这批手游买量广告素材的前三秒钩子、CTR 假设和迭代方向。",
+      "expected_output": "不触发 game-art-sourcing；买量广告创意与投放素材分析不属于游戏美术证据研究。",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "调研今年僵尸手游的收入、下载量、市场份额和发行商排名。",
+      "expected_output": "不触发 game-art-sourcing；这是市场与营收研究，不能因出现调研一词而误触发。",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Art Sourcing"
+  short_description: "Source and analyze game art with bucketed visual evidence."
+  default_prompt: "Use $game-art-sourcing to collect 8–14 quality-gated images across key art, character, environment, and UI/gameplay buckets, inspect the local images, and produce an evidence-backed art report."
+
+policy:
+  allow_implicit_invocation: true
